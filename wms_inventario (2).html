@@ -1,0 +1,3101 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SGI — Sistema de Gestión de Inventario | Centro de Distribución</title>
+<style>
+/* =========================================================================
+   SGI — Sistema de Gestión de Inventario de Centro de Distribución
+   Hoja de estilos corporativa. Densidad alta, sin decoración.
+   Referencia visual: SAP Fiori / Oracle WMS / Dynamics 365.
+   ========================================================================= */
+
+/* --- 1. Tokens corporativos ------------------------------------------- */
+:root{
+  --c-bg:#eef0f2;          /* fondo aplicacion  */
+  --c-panel:#ffffff;       /* superficie        */
+  --c-head:#e9ecef;        /* encabezado tabla  */
+  --c-line:#c9ced4;        /* borde fuerte      */
+  --c-line-soft:#e3e6e9;   /* borde interno     */
+  --c-txt:#1c1f23;         /* texto principal   */
+  --c-txt2:#5b6570;        /* texto secundario  */
+  --c-blue:#0b4f8f;        /* azul corporativo  */
+  --c-blue-d:#083c6d;
+  --c-blue-l:#e8eef5;
+  --c-red:#b3261e;         /* solo errores      */
+  --c-red-l:#fbeceb;
+  --c-green:#146c37;       /* solo estado correcto */
+  --c-green-l:#eaf3ed;
+  --c-amber:#8a6100;       /* solo advertencias */
+  --c-amber-l:#fdf5e3;
+  --fs:15px;               /* dato: lo que se lee de pie */
+  --fs2:13px;              /* secundario */
+  --fs3:12px;              /* etiquetas */
+  --h-row:34px;            /* fila comoda para dedo */
+  --r:2px;                 /* radio minimo */
+}
+
+/* --- 2. Base ----------------------------------------------------------- */
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  font-family:Inter,"Segoe UI",Roboto,Arial,sans-serif;
+  font-size:var(--fs);line-height:1.35;color:var(--c-txt);
+  background:var(--c-bg);-webkit-font-smoothing:antialiased;
+}
+button,input,select,textarea{font-family:inherit;font-size:var(--fs);color:inherit}
+a{color:var(--c-blue);text-decoration:none}
+::selection{background:var(--c-blue-l)}
+
+/* --- 3. Layout: header / sidebar / main / footer ----------------------- */
+#app{display:grid;height:100vh;
+  grid-template-columns:208px 1fr;
+  grid-template-rows:46px 1fr 30px;
+  grid-template-areas:"hd hd" "nav main" "ft ft";}
+
+header{grid-area:hd;background:var(--c-blue);color:#fff;display:flex;align-items:center;
+  padding:0 10px;gap:14px;border-bottom:1px solid var(--c-blue-d)}
+.brand{font-weight:600;letter-spacing:.4px}
+.brand span{font-weight:400;opacity:.85;margin-left:6px}
+.hd-ctx{margin-left:auto;display:flex;align-items:center;gap:12px;font-size:var(--fs2);opacity:.95}
+.hd-ctx b{font-weight:600}
+.hd-sep{width:1px;height:18px;background:rgba(255,255,255,.28)}
+.hd-ed{cursor:pointer;border-bottom:1px dotted rgba(255,255,255,.45)}
+.hd-ed:hover{color:#fff;border-bottom-color:#fff}
+
+nav{grid-area:nav;background:#f6f7f8;border-right:1px solid var(--c-line);overflow-y:auto}
+.nav-sec{padding:8px 10px 4px;font-size:var(--fs3);letter-spacing:.7px;color:var(--c-txt2);text-transform:uppercase}
+.nav-i{display:block;padding:5px 10px;border-left:3px solid transparent;color:var(--c-txt);cursor:pointer;white-space:nowrap}
+.nav-i:hover{background:#e9ecef}
+.nav-i.on{background:var(--c-blue-l);border-left-color:var(--c-blue);font-weight:600;color:var(--c-blue-d)}
+
+main{grid-area:main;overflow:auto;padding:8px}
+footer{grid-area:ft;background:#f6f7f8;border-top:1px solid var(--c-line);
+  display:flex;align-items:center;padding:0 10px;gap:14px;font-size:var(--fs2);color:var(--c-txt2)}
+footer .sp{margin-left:auto}
+
+/* --- 4. Bloques de contenido ------------------------------------------ */
+.view-hd{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.view-hd h1{font-size:19px;font-weight:600}
+.view-hd .crumb{color:var(--c-txt2);font-size:var(--fs2)}
+.view-hd .sp{margin-left:auto;display:flex;gap:5px}
+
+.panel{background:var(--c-panel);border:1px solid var(--c-line);margin-bottom:8px}
+.panel-hd{background:var(--c-head);border-bottom:1px solid var(--c-line);padding:4px 8px;
+  font-weight:600;font-size:var(--fs2);text-transform:uppercase;letter-spacing:.4px;
+  display:flex;align-items:center;gap:8px}
+.panel-hd .sp{margin-left:auto;display:flex;gap:5px;align-items:center}
+.panel-bd{padding:8px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+@media(max-width:1100px){.grid2,.grid3{grid-template-columns:1fr}}
+
+/* --- 5. Banda de indicadores (tablero de control) --------------------- */
+.kpis{display:grid;grid-template-columns:repeat(6,1fr);border:1px solid var(--c-line);
+  background:var(--c-panel);margin-bottom:8px}
+@media(max-width:1200px){.kpis{grid-template-columns:repeat(3,1fr)}}
+.kpi{padding:6px 9px;border-right:1px solid var(--c-line-soft)}
+.kpi:last-child{border-right:0}
+.kpi .l{font-size:var(--fs3);text-transform:uppercase;letter-spacing:.5px;color:var(--c-txt2)}
+.kpi .v{font-size:23px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.2}
+.kpi .s{font-size:var(--fs3);color:var(--c-txt2);font-variant-numeric:tabular-nums}
+.kpi .v.ok{color:var(--c-green)} .kpi .v.bad{color:var(--c-red)} .kpi .v.warn{color:var(--c-amber)}
+
+/* --- 6. Tablas: nucleo del sistema ------------------------------------ */
+.tbl-wrap{overflow:auto;border-top:1px solid var(--c-line)}
+table.t{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+table.t th{background:var(--c-head);text-align:left;font-weight:600;font-size:var(--fs2);
+  padding:6px 6px;border-bottom:1px solid var(--c-line);border-right:1px solid var(--c-line-soft);
+  position:sticky;top:0;z-index:2;white-space:nowrap;cursor:pointer;user-select:none}
+table.t th.nos{cursor:default}
+table.t th .ar{color:var(--c-blue);margin-left:3px}
+table.t td{padding:3px 6px;border-bottom:1px solid var(--c-line-soft);
+  border-right:1px solid var(--c-line-soft);white-space:nowrap;height:var(--h-row)}
+table.t tbody tr:hover{background:#f4f6f8}
+table.t tbody tr.sel{background:var(--c-blue-l)}
+table.t .r{text-align:right} table.t .c{text-align:center}
+table.t .mono{font-family:Consolas,"Segoe UI Mono",monospace}
+.t-empty{padding:14px;text-align:center;color:var(--c-txt2)}
+.neg{color:var(--c-red)} .pos{color:var(--c-green)}
+
+/* --- 7. Barra de filtros ---------------------------------------------- */
+.filters{display:flex;flex-wrap:wrap;gap:6px;align-items:flex-end;padding:6px 8px;
+  background:#fafbfc;border-bottom:1px solid var(--c-line-soft)}
+.f{display:flex;flex-direction:column;gap:2px}
+.f label{font-size:var(--fs3);color:var(--c-txt2);text-transform:uppercase;letter-spacing:.4px}
+input[type=text],input[type=number],input[type=date],select,textarea{
+  height:32px;padding:0 7px;font-size:var(--fs);border:1px solid var(--c-line);border-radius:var(--r);
+  background:#fff;outline:none}
+textarea{height:auto;padding:4px 5px;resize:vertical}
+input:focus,select:focus,textarea:focus{border-color:var(--c-blue);box-shadow:inset 0 0 0 1px var(--c-blue)}
+input[readonly]{background:#f2f3f5;color:var(--c-txt2)}
+select{min-width:110px}
+.f input[type=text]{min-width:150px}
+
+/* --- 8. Botones -------------------------------------------------------- */
+.btn{height:24px;padding:0 9px;border:1px solid var(--c-line);background:#fbfbfc;
+  border-radius:var(--r);cursor:pointer;white-space:nowrap}
+.btn:hover{background:#eef0f2}
+.btn:active{background:#e2e5e8}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.pri{background:var(--c-blue);border-color:var(--c-blue-d);color:#fff}
+.btn.pri:hover{background:var(--c-blue-d)}
+.btn.dan{border-color:var(--c-red);color:var(--c-red)}
+.btn.dan:hover{background:var(--c-red-l)}
+.btn.xs{height:28px;padding:0 9px;font-size:var(--fs2)}
+.btn-lnk{background:none;border:0;color:var(--c-blue);cursor:pointer;padding:0;text-decoration:underline}
+:focus-visible{outline:2px solid var(--c-blue);outline-offset:1px}
+
+/* --- 9. Estados (semaforo restringido) -------------------------------- */
+.st{display:inline-block;padding:0 6px;border:1px solid;border-radius:var(--r);font-size:var(--fs2);line-height:20px}
+.st.g{color:var(--c-green);border-color:var(--c-green);background:var(--c-green-l)}
+.st.r{color:var(--c-red);border-color:var(--c-red);background:var(--c-red-l)}
+.st.a{color:var(--c-amber);border-color:var(--c-amber);background:var(--c-amber-l)}
+.st.b{color:var(--c-blue);border-color:var(--c-blue);background:var(--c-blue-l)}
+.st.n{color:var(--c-txt2);border-color:var(--c-line);background:#f4f5f6}
+
+/* --- 10. Paginacion ---------------------------------------------------- */
+.pag{display:flex;align-items:center;gap:6px;padding:4px 8px;border-top:1px solid var(--c-line);
+  background:#fafbfc;font-size:var(--fs2);color:var(--c-txt2)}
+.pag .sp{margin-left:auto;display:flex;gap:4px;align-items:center}
+
+/* --- 11. Formularios de configuracion ---------------------------------- */
+.form-grid{display:grid;grid-template-columns:210px 1fr;gap:5px 10px;align-items:center}
+.form-grid .lb{color:var(--c-txt2);text-align:right}
+.form-grid .hint{grid-column:2;font-size:10px;color:var(--c-txt2);margin-top:-3px}
+fieldset{border:1px solid var(--c-line-soft);padding:8px;margin-bottom:8px}
+legend{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;padding:0 4px;color:var(--c-txt2)}
+
+/* --- 12. Barra de progreso / grafico de barras (sin color fuerte) ------ */
+.bar{height:10px;background:var(--c-line-soft);border:1px solid var(--c-line);position:relative}
+.bar>i{display:block;height:100%;background:var(--c-blue)}
+.bar>i.g{background:var(--c-green)} .bar>i.r{background:var(--c-red)} .bar>i.a{background:var(--c-amber)}
+.chart-row{display:grid;grid-template-columns:120px 1fr 62px;gap:6px;align-items:center;margin-bottom:3px}
+.chart-row .cl{color:var(--c-txt2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chart-row .cv{text-align:right;font-variant-numeric:tabular-nums}
+
+/* --- 13. Dialogo modal (minimo, sin efectos) --------------------------- */
+.mask{position:fixed;inset:0;background:rgba(28,31,35,.35);display:flex;
+  align-items:flex-start;justify-content:center;padding-top:80px;z-index:50}
+.modal{background:var(--c-panel);border:1px solid var(--c-line);width:520px;max-width:94vw}
+.modal .panel-hd{justify-content:space-between}
+.modal-ft{padding:6px 8px;border-top:1px solid var(--c-line);background:#fafbfc;
+  display:flex;gap:5px;justify-content:flex-end}
+
+/* --- 14. Mensajes de estado ------------------------------------------- */
+#msg{position:fixed;right:10px;bottom:32px;z-index:60;display:flex;flex-direction:column;gap:4px}
+.toast{background:var(--c-panel);border:1px solid var(--c-line);border-left:3px solid var(--c-blue);
+  padding:5px 10px;min-width:220px;box-shadow:0 1px 2px rgba(0,0,0,.12)}
+.toast.err{border-left-color:var(--c-red)} .toast.ok{border-left-color:var(--c-green)}
+.toast.warn{border-left-color:var(--c-amber)}
+
+/* --- 15. Utilidades ---------------------------------------------------- */
+.muted{color:var(--c-txt2)} .b{font-weight:600} .nowrap{white-space:nowrap}
+.dl{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;font-size:11px}
+.dl dt{color:var(--c-txt2)} .dl dd{font-weight:600}
+.inline{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.qty-in{width:70px;text-align:right}
+.hr{height:1px;background:var(--c-line-soft);margin:6px 0}
+
+/* --- 16. Hoja de conteo: comportamiento de hoja de cálculo ------------- */
+.sheet-bar{display:flex;flex-wrap:wrap;align-items:center;gap:14px;background:var(--c-panel);
+  border:1px solid var(--c-line);padding:5px 9px;margin-bottom:8px;position:sticky;top:0;z-index:4}
+.sb-item{display:flex;align-items:center;gap:6px;font-variant-numeric:tabular-nums}
+.sb-item .l{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--c-txt2)}
+.sb-item b{font-size:13px}
+table.hoja input.cap{width:100%;height:20px;padding:0 4px;text-align:right;
+  border:1px solid var(--c-line);border-radius:var(--r);background:#fff}
+table.hoja input.cap:focus{border-color:var(--c-blue);box-shadow:inset 0 0 0 1px var(--c-blue);background:var(--c-blue-l)}
+table.hoja tr.dif td{background:var(--c-red-l)}
+table.hoja tr.tol td{background:var(--c-amber-l)}
+table.hoja tr.ok  td{background:var(--c-green-l)}
+table.hoja tr:hover td{filter:brightness(.985)}
+table.hoja td{height:26px}
+.pag .st{margin-left:6px}
+
+
+/* =========================================================================
+   17. TABLET Y MÓVIL
+   El escritorio manda: la densidad no se toca por encima de 900px porque la
+   tablet en horizontal es donde más se trabaja. Por debajo, el sistema
+   cambia de forma: menú en cajón, tablas apiladas y controles de dedo.
+   ========================================================================= */
+#btn-menu{display:none;background:transparent;border:1px solid rgba(255,255,255,.35);
+  color:#fff;border-radius:var(--r);width:34px;height:28px;font-size:16px;line-height:1;cursor:pointer}
+#nav-mask{display:none}
+.mov{display:none}                      /* controles solo de móvil */
+.cap-wrap{display:flex;gap:4px;align-items:center}
+.cap-wrap input{flex:1}
+
+@media (max-width:900px){
+  :root{--fs:13px;--h-row:26px}
+  #app{grid-template-columns:1fr;grid-template-areas:"hd" "main" "ft"}
+  main{padding:6px}
+
+  /* Menú lateral convertido en cajón */
+  #btn-menu{display:block}
+  nav{position:fixed;top:40px;bottom:24px;left:0;width:240px;z-index:30;
+      transform:translateX(-100%);transition:transform .15s ease;box-shadow:1px 0 4px rgba(0,0,0,.2)}
+  nav.abierto{transform:none}
+  #nav-mask.on{display:block;position:fixed;inset:46px 0 30px;background:rgba(28,31,35,.4);z-index:29}
+  .nav-i{padding:12px 12px}
+  .hd-ctx span:not(#hd-clock),.hd-sep{display:none}
+  .hd-ctx #hd-sesion{display:inline}
+  .hd-ctx #hd-clock{font-size:11px}
+
+  /* Objetivos táctiles */
+  .btn{height:40px;padding:0 12px}
+  .btn.xs{height:34px;padding:0 10px}
+  input[type=text],input[type=number],input[type=date],select{height:40px;font-size:16px}
+  textarea{font-size:16px}
+  input[type=checkbox]{width:22px;height:22px}
+  .mov{display:inline-block}
+
+  /* Indicadores y bloques */
+  .kpis{grid-template-columns:repeat(2,1fr)}
+  .grid2,.grid3{grid-template-columns:1fr}
+  .view-hd{flex-wrap:wrap}
+  .view-hd .sp{width:100%;flex-wrap:wrap}
+  .view-hd .crumb{display:none}
+
+  /* Filtros en columna, a todo el ancho */
+  .filters{flex-direction:column;align-items:stretch}
+  .f{width:100%}
+  .f input,.f select,.f button,.filters .btn{width:100%}
+  .f input[type=text],select{min-width:0}
+  .filters .inline{display:grid;grid-template-columns:1fr;gap:5px}
+  .filters .inline .btn{width:100%}
+  .f[style*="margin-left:auto"]{margin-left:0!important}
+
+  /* Tablas apiladas: cada fila es una ficha con etiqueta y valor */
+  table.t thead{display:none}
+  table.t,table.t tbody,table.t tr,table.t td{display:block;width:100%}
+  table.t tr{border:1px solid var(--c-line);margin-bottom:6px;background:var(--c-panel)}
+  table.t tbody tr:hover{background:var(--c-panel)}
+  table.t td{border:0;border-bottom:1px solid var(--c-line-soft);white-space:normal;
+    height:auto;min-height:30px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+  table.t td:last-child{border-bottom:0}
+  table.t td::before{content:attr(data-l);color:var(--c-txt2);font-size:11px;
+    text-transform:uppercase;letter-spacing:.4px;flex:0 0 42%;text-align:left}
+  table.t td[data-l=""]::before,table.t td:not([data-l])::before{content:none}
+  table.t td.r,table.t td.c{text-align:left}
+  .tbl-wrap{max-height:none!important;border-top:0}
+
+  /* Paginación con el pulgar */
+  .pag{flex-wrap:wrap}
+  .pag .no-mov{display:none}
+  .pag .sp{width:100%;margin-left:0;margin-top:4px}
+  .pag .sp .btn{flex:1}
+
+  /* Barra de la hoja de conteo */
+  .sheet-bar{gap:8px 14px;padding:6px}
+  .sheet-bar .no-mov{display:none}
+  .sheet-bar .sb-item{flex:1 1 auto}
+  .sheet-bar #scan,.sheet-bar select{width:100%}
+
+  /* Hoja de conteo: ficha por línea con captura grande */
+  table.hoja td[data-l="#"],table.hoja td[data-l="UM"],table.hoja td[data-l="Valor"]{display:none}
+  table.hoja td[data-l="Ubicación"]{font-size:15px;font-weight:600;background:var(--c-head)}
+  table.hoja td[data-l="Contado"]{padding:6px}
+  table.hoja input.cap{height:44px;font-size:20px;font-weight:600}
+  table.hoja .cap-wrap .btn{height:44px;width:44px;padding:0;font-size:18px}
+  table.hoja td[data-l="="] .btn{height:40px;width:100%}
+  table.hoja tr{margin-bottom:8px}
+
+  /* Diálogos a pantalla completa */
+  .mask{padding-top:0;align-items:stretch}
+  .modal{width:100%;max-width:100%;height:100%;display:flex;flex-direction:column}
+  .modal .panel-bd{flex:1;overflow:auto}
+  .modal-ft .btn{flex:1}
+
+  .form-grid{grid-template-columns:1fr}
+  .form-grid .lb{text-align:left}
+  .form-grid .hint{grid-column:1}
+}
+
+@media (max-width:420px){
+  .kpis{grid-template-columns:1fr}
+  table.t td::before{flex-basis:38%}
+}
+
+
+/* --- 18. Guía de ciclo de vida y avisos de pestaña -------------------- */
+.aviso{background:var(--c-blue-l);border:1px solid var(--c-line);border-left:3px solid var(--c-blue);
+  padding:6px 9px;margin-bottom:8px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.flujo{display:flex;align-items:center;gap:5px;margin-left:auto;flex-wrap:wrap}
+.flujo .fl{border:1px solid var(--c-line);background:var(--c-panel);color:var(--c-txt2);
+  padding:0 6px;border-radius:var(--r);font-size:10px;letter-spacing:.4px;line-height:17px}
+.flujo .fl.on{background:var(--c-blue);border-color:var(--c-blue-d);color:#fff;font-weight:600}
+.flujo .fs{color:var(--c-txt2)}
+@media (max-width:900px){.aviso{display:block}.flujo{margin-left:0;margin-top:6px}}
+
+
+/* --- 19. Barra de etapas del proceso y menú de acciones --------------- */
+.etapas{display:flex;align-items:stretch;background:var(--c-panel);border:1px solid var(--c-line);
+  margin-bottom:8px;overflow-x:auto}
+.etapas .et{display:flex;align-items:center;gap:6px;background:transparent;border:0;
+  border-right:1px solid var(--c-line-soft);padding:6px 12px;cursor:pointer;white-space:nowrap;
+  color:var(--c-txt2);font-size:12px}
+.etapas .et:hover{background:#f2f4f6}
+.etapas .et.on{background:var(--c-blue);color:#fff;font-weight:600}
+.etapas .et .n{display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;
+  border:1px solid var(--c-line);border-radius:50%;font-size:10px;background:#fff;color:var(--c-txt2)}
+.etapas .et.on .n{background:#fff;color:var(--c-blue-d);border-color:#fff;font-weight:700}
+.etapas .et .c{background:var(--c-red);color:#fff;border-radius:9px;padding:0 6px;font-size:var(--fs3);line-height:18px}
+.etapas .et.on .c{background:#fff;color:var(--c-blue-d)}
+.etapas .es{display:none}
+.pista{color:var(--c-txt2);margin:-4px 0 8px;font-size:11px}
+
+.mas{position:relative;display:inline-block}
+.mas>[data-mas-btn]{width:28px;padding:0;font-size:15px;line-height:1}
+.mas-lista{display:none;position:absolute;right:0;top:26px;z-index:25;min-width:190px;
+  background:var(--c-panel);border:1px solid var(--c-line);box-shadow:0 2px 4px rgba(0,0,0,.15)}
+.mas-lista.on{display:block}
+.mas-lista .btn{display:block;width:100%;text-align:left;border:0;border-bottom:1px solid var(--c-line-soft);
+  border-radius:0;height:28px}
+.mas-lista .btn:last-child{border-bottom:0}
+.flujo .fl.hecha{color:var(--c-green);border-color:var(--c-green);background:var(--c-green-l)}
+@media (max-width:900px){
+  .etapas .et{padding:10px 10px;flex:1 0 auto}
+  .mas-lista .btn{height:40px}
+}
+
+
+/* --- 20. Barra del documento y pantalla de resultado ------------------ */
+.etapas.doc{background:#f6f7f8}
+.etapas.doc .et-doc{display:flex;align-items:center;padding:6px 12px;font-weight:600;
+  background:var(--c-panel);border-right:1px solid var(--c-line);font-family:Consolas,monospace}
+.etapas.doc .et{cursor:default}
+.etapas.doc .et:hover{background:transparent}
+.etapas.doc .et.hecha{color:var(--c-green)}
+.etapas.doc .et.hecha .n{background:var(--c-green-l);border-color:var(--c-green);color:var(--c-green)}
+
+.resultado{display:flex;align-items:center;gap:14px;background:var(--c-panel);
+  border:1px solid var(--c-line);border-left:4px solid var(--c-green);padding:14px 16px;margin-bottom:8px}
+.resultado.fin{border-left-color:var(--c-blue)}
+.resultado.inv{border-left-color:var(--c-amber)}
+.resultado.dis{border-left-color:var(--c-red)}
+.resultado .r-ico{width:38px;height:38px;border-radius:50%;background:var(--c-green-l);
+  color:var(--c-green);display:flex;align-items:center;justify-content:center;font-size:20px;flex:0 0 auto}
+.resultado.fin .r-ico{background:var(--c-blue-l);color:var(--c-blue)}
+.resultado.inv .r-ico{background:var(--c-amber-l);color:var(--c-amber)}
+.resultado.dis .r-ico{background:var(--c-red-l);color:var(--c-red)}
+.resultado .r-txt h2{font-size:15px;font-weight:600;margin-bottom:2px}
+.resultado .r-txt p{color:var(--c-txt2)}
+.resultado .r-acc{margin-left:auto;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.btn.grande{height:34px;padding:0 18px;font-size:13px;font-weight:600}
+@media (max-width:900px){
+  .resultado{display:block}
+  .resultado .r-ico{margin-bottom:8px}
+  .resultado .r-acc{margin-left:0;margin-top:10px}
+  .resultado .r-acc .btn{width:100%}
+  .etapas.doc .et-doc{width:100%;border-right:0;border-bottom:1px solid var(--c-line)}
+}
+
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+/* --- Cinta de seleccion: no existe hasta que marcas algo -------------- */
+.cinta{display:flex;align-items:center;gap:8px;padding:7px 8px;
+  background:var(--c-blue-l);border-bottom:1px solid var(--c-blue);
+  position:sticky;top:0;z-index:3}
+.cinta .cnt{font-weight:600;color:var(--c-blue-d);white-space:nowrap}
+.cinta .sp{margin-left:auto;display:flex;gap:5px;align-items:center}
+@media(max-width:720px){
+  .cinta{position:fixed;left:0;right:0;bottom:0;top:auto;z-index:40;
+    border-top:2px solid var(--c-blue);border-bottom:0;flex-wrap:wrap;
+    box-shadow:0 -2px 8px rgba(0,0,0,.18)}
+  .cinta .sp{margin-left:0;width:100%}
+  .cinta .sp .btn{flex:1}
+}
+
+/* --- Marca de discrepancia: acompana al conteo para siempre ----------- */
+.mk{display:inline-block;width:9px;height:9px;border-radius:50%;vertical-align:middle;
+    margin-left:6px;border:1.5px solid #c62828}
+.mk.ab{background:var(--c-amber);border-color:var(--c-amber)}
+.mk.dif{background:#e53935}
+.mk.hist{background:transparent}
+.mk-tx{font-size:11px;color:#c62828;margin-left:4px}
+.mk-tx.hist{color:#8d6e63}
+.bit{border-left:2px solid var(--bd,#d9d9d9);padding:4px 0 4px 8px;margin:4px 0;font-size:12px}
+.bit .b-ts{color:#777;font-size:11px}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <button id="btn-menu" aria-label="Abrir menú">≡</button>
+    <div class="brand">SGI <span>Gestión de Inventario</span></div>
+    <div class="hd-ctx">
+      <span class="hd-ed" id="hd-sesion" title="Clic para cambiar centro y usuario"><b id="hd-cd">—</b>
+        · <b id="hd-user">—</b></span><i class="hd-sep"></i>
+      <span class="hd-ed" id="hd-exist" title="Clic para cargar existencias">Existencias: <b id="hd-foto">—</b></span><i class="hd-sep"></i>
+      <span id="hd-clock">—</span>
+    </div>
+  </header>
+  <nav id="nav"></nav>
+  <div id="nav-mask"></div>
+  <main id="view"></main>
+  <footer>
+    <span id="ft-status">Listo</span>
+    <span class="sp" id="ft-ver">SGI</span>
+  </footer>
+</div>
+<div id="modal-host"></div>
+<div id="msg"></div>
+<script>
+/* SGI - CFG parametros · DB datos · UI componentes · VIEWS pantallas · APP router Las reglas de negocio viven en CFG, editables desde Configuracion. */
+
+/* ==========  1. CONFIGURACIoN (todo parametrizable) ====================== */
+const CFG = {
+  empresa:'Mi empresa',
+  centro:'Centro de distribucion',
+  moneda:'RD$',
+  usuario:'Usuario',
+  rol:'Supervisor de almacen',
+
+  /* Metas e indicadores */
+  metaExactitud:98.0,
+  metaCumplimiento:95.0,
+  alertaExactitud:96.0,
+
+  /* Tolerancias por clase ABC: % sobre teorico y minimo en unidades */
+  tolerancia:{
+    A:{pct:0.50,min:1},
+    B:{pct:1.00,min:2},
+    C:{pct:2.00,min:5}
+  },
+  /* Frecuencia de conteo ciclico por clase (dias) */
+  frecuencia:{A:30,B:60,C:120},
+
+  /* Operacion */
+  filasPorPagina:25,
+  lineasPorHoja:150,
+  decimales:2,
+
+  /* Causas */
+  causas:['Error de picking','Error de captura','Error de recepcion',
+          'Mercancia en otra ubicacion','Salida sin documentar','Entrada sin documentar',
+          'Producto danado','Merma confirmada','Vencimiento','Robo confirmado',
+          'Error del suplidor'],
+  zonas:[],
+  tiposConteo:['Ciclico','Total','Puntual','Por diferencia'],
+  responsables:[]
+};
+
+/* ==========  2. UTILIDADES ============================================== */
+const U = {
+  /* Generador determinista para el juego de datos de demostración */
+  _s:20260731,
+  rnd(){ U._s=(U._s*1664525+1013904223)>>>0; return U._s/4294967296; },
+  ri(a,b){ return a+Math.floor(U.rnd()*(b-a+1)); },
+  pick(a){ return a[U.ri(0,a.length-1)]; },
+  n(v,d){ return (v==null||isNaN(v))?'—':Number(v).toLocaleString('es-DO',
+          {minimumFractionDigits:d??0,maximumFractionDigits:d??0}); },
+  m(v){ return CFG.moneda+' '+U.n(v,CFG.decimales); },
+  p(v){ return (v==null||isNaN(v))?'—':Number(v).toFixed(2)+'%'; },
+  d(x){ return x?new Date(x).toISOString().slice(0,10):'—'; },
+  /* Hora local del equipo: toISOString da UTC y en RD adelanta el dia a las 8 pm */
+  hoy(){ const d=new Date(), z=n=>String(n).padStart(2,'0');
+    return d.getFullYear()+'-'+z(d.getMonth()+1)+'-'+z(d.getDate()); },
+  ts(){ const d=new Date(), z=n=>String(n).padStart(2,'0');
+    return U.hoy()+' '+z(d.getHours())+':'+z(d.getMinutes())+':'+z(d.getSeconds()); },
+  addDays(dt,n){ const d=new Date(dt); d.setDate(d.getDate()+n); return d.toISOString().slice(0,10); },
+  /* Un solo comparador reutilizable */
+  col:new Intl.Collator('es',{numeric:true,sensitivity:'base'}),
+  zonaDe(ub){ return String(ub||'').split('-')[0]; },
+  esc(s){ return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); },
+  id(pfx,n){ return pfx+'-'+String(n).padStart(5,'0'); },
+  /* Tolerancia según clase ABC — leída siempre desde CFG */
+  tol(clase,teorico){
+    const t=CFG.tolerancia[clase]||{pct:0,min:0};
+    return Math.max(t.min, Math.abs(teorico)*t.pct/100);
+  },
+  dentroTol(clase,teorico,dif){ return Math.abs(dif)<=U.tol(clase,teorico); },
+  csv(nombre,cols,rows){
+    const esc=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
+    const txt=[cols.map(c=>esc(c.label)).join(';')]
+      .concat(rows.map(r=>cols.map(c=>esc(c.raw?c.raw(r):r[c.key])).join(';'))).join('\r\n');
+    const b=new Blob(['\ufeff'+txt],{type:'text/csv;charset=utf-8'});
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(b); a.download=nombre+'_'+U.hoy()+'.csv'; a.click();
+    URL.revokeObjectURL(a.href); UI.msg('Archivo exportado: '+nombre+'.csv','ok');
+  },
+  /* Lee un archivo subido y devuelve texto listo para DB.leer: Excel (.xlsx) o CSV/TXT, sin convertir nada */
+  async textoDeArchivo(f){
+    const buf=await f.arrayBuffer();
+    if(/\.xls[xm]$/i.test(f.name)) return U.xlsxATexto(buf);
+    if(/\.xls$/i.test(f.name)) throw new Error('Ese es un Excel antiguo (.xls). Guardelo como .xlsx, o copie las celdas y peguelas aqui');
+    try{ return new TextDecoder('utf-8',{fatal:true}).decode(buf); }
+    catch(e){ return new TextDecoder('windows-1252').decode(buf); }   /* CSV guardado por Excel en Windows */
+  },
+  /* Lee la primera hoja de un .xlsx (zip + XML) sin librerias. Devuelve texto separado por tabulacion. */
+  async xlsxATexto(buf){
+    const dv=new DataView(buf), u8=new Uint8Array(buf);
+    let fin=-1;
+    for(let i=u8.length-22;i>=Math.max(0,u8.length-65558);i--){
+      if(dv.getUint32(i,true)===0x06054b50){ fin=i; break; } }
+    if(fin<0) throw new Error('El archivo no es un Excel (.xlsx) valido');
+    const n=dv.getUint16(fin+10,true); let p=dv.getUint32(fin+16,true);
+    const ent={};
+    for(let k=0;k<n;k++){
+      if(dv.getUint32(p,true)!==0x02014b50) break;
+      const nl=dv.getUint16(p+28,true), xl=dv.getUint16(p+30,true), cl=dv.getUint16(p+32,true);
+      const nombre=new TextDecoder().decode(u8.subarray(p+46,p+46+nl));
+      ent[nombre]={m:dv.getUint16(p+10,true),cs:dv.getUint32(p+20,true),off:dv.getUint32(p+42,true)};
+      p+=46+nl+xl+cl;
+    }
+    const leer=async nombre=>{
+      const z=ent[nombre]; if(!z) return null;
+      const o=z.off, d0=o+30+dv.getUint16(o+26,true)+dv.getUint16(o+28,true);
+      let datos=u8.subarray(d0,d0+z.cs);
+      if(z.m===8) datos=new Uint8Array(await new Response(new Blob([datos]).stream()
+        .pipeThrough(new DecompressionStream('deflate-raw'))).arrayBuffer());
+      else if(z.m!==0) throw new Error('Este Excel usa una compresion que no se puede leer');
+      return new TextDecoder().decode(datos);
+    };
+    const xml=async nombre=>{ const t=await leer(nombre); return t?new DOMParser().parseFromString(t,'application/xml'):null; };
+    /* Primera hoja del libro */
+    let hoja='xl/worksheets/sheet1.xml';
+    const wb=await xml('xl/workbook.xml'), rl=await xml('xl/_rels/workbook.xml.rels');
+    if(wb&&rl){
+      const sh=wb.getElementsByTagName('sheet')[0];
+      const rid=sh&&(sh.getAttribute('r:id')||sh.getAttributeNS('http://schemas.openxmlformats.org/officeDocument/2006/relationships','id'));
+      const r=[...rl.getElementsByTagName('Relationship')].find(x=>x.getAttribute('Id')===rid);
+      if(r) hoja='xl/'+r.getAttribute('Target').replace(/^\/?(xl\/)?/,'');
+    }
+    /* Textos compartidos */
+    const ss=[], sx=await xml('xl/sharedStrings.xml');
+    if(sx) [...sx.getElementsByTagName('si')].forEach(si=>
+      ss.push([...si.getElementsByTagName('t')].map(t=>t.textContent).join('')));
+    /* Estilos que son fecha (Excel guarda las fechas como numero) */
+    const fecha=new Set(), st=await xml('xl/styles.xml');
+    if(st){
+      const cus={};
+      [...st.getElementsByTagName('numFmt')].forEach(f=>cus[f.getAttribute('numFmtId')]=f.getAttribute('formatCode'));
+      const xfs=st.getElementsByTagName('cellXfs')[0];
+      if(xfs) [...xfs.getElementsByTagName('xf')].forEach((x,i)=>{
+        const id=+x.getAttribute('numFmtId'), c=cus[id];
+        if((id>=14&&id<=22)||(id>=45&&id<=47)||(c&&/[dmy]/i.test(c.replace(/"[^"]*"|\[[^\]]*\]|\\./g,'')))) fecha.add(i);
+      });
+    }
+    const sh=await xml(hoja);
+    if(!sh) throw new Error('No se pudo leer la hoja del Excel');
+    const colN=ref=>{ let c=0; for(const ch of ref.replace(/\d/g,'')) c=c*26+ch.charCodeAt(0)-64; return c-1; };
+    const filas=[];
+    [...sh.getElementsByTagName('row')].forEach(r=>{
+      const fila=[]; let sig=0;
+      [...r.getElementsByTagName('c')].forEach(c=>{
+        const ref=c.getAttribute('r'), i=ref?colN(ref):sig; sig=i+1;
+        const t=c.getAttribute('t'), v=c.getElementsByTagName('v')[0];
+        let val='';
+        if(t==='inlineStr') val=[...c.getElementsByTagName('t')].map(x=>x.textContent).join('');
+        else if(v){
+          val=v.textContent;
+          if(t==='s') val=ss[+val]??'';
+          else if(t==='b') val=val==='1'?'SI':'NO';
+          else if(t==='e') val='';
+          else if(t!=='str'){
+            if(fecha.has(+(c.getAttribute('s')||0))&&val!==''&&!isNaN(val))
+              val=new Date(Date.UTC(1899,11,30)+Math.floor(+val)*864e5).toISOString().slice(0,10);
+            else if(/^-?\d+\.\d{3}$/.test(val)) val+='0';   /* 12.125 no se confunde con miles */
+          }
+        }
+        fila[i]=String(val).replace(/[\t\r\n]+/g,' ').trim();
+      });
+      filas.push(Array.from(fila,x=>x??'').join('\t'));
+    });
+    return filas.join('\n');
+  }
+};
+
+/* ========== 3. */
+const DB = {
+  productos:[], ubicaciones:[], stock:[], conteos:[], discrepancias:[], historial:[],
+  seq:{conteo:0, disc:0},
+  /* Las existencias son una FOTO del sistema que manda, no un maestro vivo. */
+  foto:{fecha:'',hora:'',origen:''},
+
+  /* Guardado local opcional. Apagado de fabrica: la app abre en blanco. */
+  LLAVE:'sgi.v2',
+  LLAVE_ON:'sgi.v2.on',
+  /* Nace APAGADO a proposito */
+  autoguardar:false,
+  _tmr:null,
+  guardar(ya){
+    if(!DB.autoguardar) return;
+    clearTimeout(DB._tmr);
+    const hacer=()=>{
+      /* Salvaguarda */
+      try{
+        if(!ya && !DB.stock.length && !DB.conteos.length &&
+           localStorage.getItem(DB.LLAVE)) return;
+      }catch(e){ return; }
+      try{
+        localStorage.setItem(DB.LLAVE, JSON.stringify({
+          v:2, ts:U.ts(), cfg:CFG,
+          productos:DB.productos, ubicaciones:DB.ubicaciones, stock:DB.stock,
+          conteos:DB.conteos, discrepancias:DB.discrepancias,
+          historial:DB.historial.slice(0,500), seq:DB.seq, foto:DB.foto}));
+        DB._err=false;
+      }catch(e){
+        /* Se lleno el espacio del navegador: se avisa una sola vez */
+        if(!DB._err){ DB._err=true; DB.autoguardar=false;
+          UI.msg('No se pudo guardar en este navegador: falta espacio. Exporte a CSV lo que necesite','warn'); }
+      }
+    };
+    ya ? hacer() : DB._tmr=setTimeout(hacer,800);
+  },
+  recuperar(){
+    let d=null;
+    try{ d=JSON.parse(localStorage.getItem(DB.LLAVE)||'null'); }catch(e){ d=null; }
+    if(!d||!d.stock) return null;
+    Object.assign(CFG,d.cfg||{});
+    DB.productos=d.productos||[]; DB.ubicaciones=d.ubicaciones||[]; DB.stock=d.stock||[];
+    DB.conteos=d.conteos||[];     DB.discrepancias=d.discrepancias||[];
+    DB.historial=d.historial||[]; DB.seq=d.seq||{conteo:0,disc:0};
+    DB.foto=d.foto||{fecha:'',hora:'',origen:''};
+    DB.indexar();
+    return d.ts;
+  },
+  olvidar(){ try{ localStorage.removeItem(DB.LLAVE); }catch(e){} },
+  prender(v){
+    DB.autoguardar=!!v;
+    try{ v ? localStorage.setItem(DB.LLAVE_ON,'1') : localStorage.removeItem(DB.LLAVE_ON); }catch(e){}
+    if(!v) DB.olvidar();          /* apagarlo borra la copia: nada de fantasmas */
+  },
+  init(){
+    let on=false;
+    try{ on=localStorage.getItem(DB.LLAVE_ON)==='1'; }catch(e){}
+    DB.autoguardar=on;
+    if(!on){
+      /* Sin permiso expreso no se recupera nada y se limpia lo que haya quedado de una version anterior */
+      DB.olvidar();
+      DB.log('Sistema','Inicio','Base vacia. Cargue sus existencias con el boton Cargar existencias');
+      return;
+    }
+    const ts=DB.recuperar();
+    DB.log('Sistema','Inicio', ts
+      ? 'Datos recuperados de este navegador - guardado el '+ts
+      : 'Base vacia. Cargue sus existencias con el boton Cargar existencias');
+  },
+
+  /* --- Indices ------------------------------------------------------- */
+  _ix:{prod:new Map(),stock:new Map()},
+  indexar(){
+    DB._ix.prod =new Map(DB.productos.map(p=>[p.sku,p]));
+    DB._ix.stock=new Map(DB.stock.map(s=>[s.ub+'|'+s.sku+'|'+s.lote,s]));
+  },
+  /* --- Consultas ---------------------------------------------------- */
+  prod(sku){
+    if(DB._ix.prod.size!==DB.productos.length) DB.indexar();
+    return DB._ix.prod.get(sku)||{desc:sku,um:'UN',clase:'C',costo:0};
+  },
+  stockDe(ub,sku,lote){
+    if(DB._ix.stock.size!==DB.stock.length) DB.indexar();
+    return DB._ix.stock.get(ub+'|'+sku+'|'+lote);
+  },
+  conteo(id){ return DB.conteos.find(c=>c.id===id); },
+  disc(id){ return DB.discrepancias.find(d=>d.id===id); },
+  fis(l){ return l.fisico; },
+  dif(l){ const f=DB.fis(l); return f==null?0:f-l.teorico; },
+  valor(l){ return +(DB.dif(l)*l.costo).toFixed(2); },
+  estadoLinea(l){
+    /* Una linea que nadie conto NO es una linea que cuadro. */
+    if(l.sinContar) return 'SIN CONTAR';
+    const f=DB.fis(l);
+    if(f==null) return 'PENDIENTE';
+    const d=DB.dif(l);
+    if(d===0) return 'EXACTO';
+    /* Con la tolerancia que regia cuando se creo el conteo, no con la de hoy */
+    const t = l.tol!=null ? l.tol : U.tol(l.clase,l.teorico);
+    return Math.abs(d)<=t ? 'TOLERADO' : 'DIFERENCIA';
+  },
+  avance(c){
+    const t=c.lineas.length, h=c.lineas.filter(l=>DB.fis(l)!=null).length;
+    return {t,h,pct:t?h*100/t:0};
+  },
+  /* Exactitud */
+  eri(lineas){
+    const c=lineas.filter(l=>!l.sinContar && DB.fis(l)!=null);
+    if(!c.length) return null;
+    const ok=c.filter(l=>DB.estadoLinea(l)!=='DIFERENCIA').length;
+    return ok*100/c.length;
+  },
+  lineasContadas(){ return DB.conteos.flatMap(c=>c.lineas); },
+  /* Diferencias que alguien miro y dio por buenas, con su causa */
+  confirmadas(){ return DB.lineasContadas().filter(l=>l.confirmada); },
+  fotoVieja(){
+    if(!DB.foto.fecha) return null;
+    return Math.round((new Date(U.hoy())-new Date(DB.foto.fecha))/864e5);
+  },
+  difs(){ return DB.lineasContadas().filter(l=>DB.estadoLinea(l)==='DIFERENCIA'); },
+
+  /* --- Discrepancias ------------------------------------------------- Una discrepancia es la investigacion de un problema. */
+  discDe(idConteo){ return DB.discrepancias.filter(d=>d.conteo===idConteo); },
+  discAbiertas(idConteo){ return DB.discDe(idConteo).filter(d=>d.estado!=='RESUELTA'); },
+  /* Marca permanente del conteo */
+  marca(c){
+    const d=DB.discDe(c.id);
+    const conf=(c.lineas||[]).filter(l=>l.confirmada).length;
+    if(!d.length&&!conf) return null;
+    const ab=d.filter(x=>x.estado!=='RESUELTA').length;
+    /* amarillo = todavia se esta investigando; rojo = cerrado con discrepancia */
+    return ab ? {k:'ab',n:ab,t:ab+' discrepancia(s) en investigacion'}
+              : {k:'dif',n:d.length+conf,
+                 t:'Cerrado con discrepancia: '+(d.length+conf)+' linea(s) con diferencia'};
+  },
+  diasDisc(d){ return Math.round((new Date(U.hoy())-new Date(d.fecha))/864e5); },
+
+  /* --- Borrado de datos --------------------------------------------- */
+  limpiar(todo){
+    DB.conteos=[]; DB.discrepancias=[]; DB.seq={conteo:0,disc:0};
+    if(todo){ DB.productos=[]; DB.ubicaciones=[]; DB.stock=[]; CFG.zonas=[]; }
+    else DB.stock.forEach(s=>s.ultConteo=U.hoy());
+    DB.historial=[];
+    if(todo) DB.foto={fecha:'',hora:'',origen:''};
+    DB.log('Configuracion',todo?'Borrar todos los datos':'Borrar movimientos',
+      todo?'Existencias y conteos eliminados':'Conteos, discrepancias e historial eliminados');
+    DB.guardar(true);
+  },
+  /* --- Carga de existencias desde CSV -------------------------------- */
+  plantillaCSV(){
+    return 'ubicacion;tipo;sku;descripcion;um;clase;costo;lote;vence;cantidad\r\n'+
+           'A-01-2-3;RACK;SKU-0001;Descripcion del articulo;CJ;A;0.00;LOTE-1;2027-12-31;0\r\n'+
+           'A-PI-01;PISO;SKU-0002;Descripcion del articulo;SAC;B;0.00;SIN LOTE;;0';
+  },
+  /* Lee un pegado de Excel (TAB) o un CSV. No escribe: devuelve lo leido. */
+  ALIAS:{
+    ub:['ubicacion','ubicación','ubic','localidad','location','bin','posicion','posición','almacen','almacén'],
+    tipo:['tipo','tipo ubicacion','tipo de ubicacion','clase ubicacion'],
+    sku:['sku','codigo','código','articulo','artículo','item','material','producto','cod','codigo articulo','número de artículo','numero de articulo'],
+    desc:['descripcion','descripción','desc','nombre','detalle','producto descripcion'],
+    um:['um','unidad','u.m.','unidad medida','unidad de medida','uom'],
+    clase:['clase','abc','clase abc','categoria','categoría'],
+    costo:['costo','precio','costo unitario','valor','costo unit','precio unitario'],
+    lote:['lote','batch','lot'],
+    vence:['vence','vencimiento','caducidad','fecha vencimiento','expira','exp'],
+    cant:['cantidad','cant','existencia','existencias','stock','teorico','teórico','qty','saldo','disponible','on hand','cantidad sistema','cantidad teorica']
+  },
+  leer(texto){
+    const crudo=String(texto||'').replace(/\r/g,'');
+    const filas=crudo.split('\n').map(x=>x.trimEnd()).filter(x=>x.trim());
+    if(!filas.length) return {cols:{},datos:[],errores:['No hay nada que leer'],sep:''};
+    /* Separador */
+    const cuenta=ch=>(filas[0].split(ch).length-1);
+    const sep=['\t',';',',','|'].sort((a,b)=>cuenta(b)-cuenta(a))[0];
+    /* Partir respetando comillas */
+    const part=ln=>{
+      const out=[]; let cur='', dentro=false;
+      for(let i=0;i<ln.length;i++){
+        const ch=ln[i];
+        if(ch==='"'){ if(dentro&&ln[i+1]==='"'){ cur+='"'; i++; } else dentro=!dentro; }
+        else if(ch===sep&&!dentro){ out.push(cur); cur=''; }
+        else cur+=ch;
+      }
+      out.push(cur);
+      return out.map(x=>x.trim());
+    };
+    const norm=x=>String(x||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+      .replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim();
+    /* Encabezado por nombre */
+    const pr=part(filas[0]), cols={};
+    Object.entries(DB.ALIAS).forEach(([k,lista])=>{
+      const li=lista.map(norm);
+      const i=pr.findIndex(t=>li.includes(norm(t)));
+      if(i>=0) cols[k]=i;
+    });
+    let hayEnc=Object.keys(cols).length>=2;
+    if(!hayEnc){ /* sin encabezado reconocible: orden de la plantilla */
+      ['ub','tipo','sku','desc','um','clase','costo','lote','vence','cant']
+        .forEach((k,i)=>cols[k]=i);
+      /* la primera fila es titulo si su ultima celda no es un numero */
+      hayEnc=!/^-?\d+([.,]\d+)?$/.test((pr[pr.length-1]||'').trim());
+    }
+    /* Numeros como los escribe la gente aqui */
+    const num=v=>{
+      let t=String(v||'').replace(/[^0-9,.\-]/g,'');
+      if(!t) return 0;
+      const hayC=t.includes(','), hayP=t.includes('.');
+      if(hayC&&hayP){
+        t = t.lastIndexOf(',')>t.lastIndexOf('.')
+          ? t.replace(/\./g,'').replace(',','.')
+          : t.replace(/,/g,'');
+      }else if(hayC||hayP){
+        const sg=hayC?',':'.', veces=(t.split(sg).length-1);
+        const cola=t.slice(t.lastIndexOf(sg)+1);
+        const miles = veces>1 || (cola.length===3 && /^\d+$/.test(cola));
+        t = miles ? t.split(sg).join('') : t.replace(sg,'.');
+      }
+      return +t||0;
+    };
+    const err=[], datos=[];
+    filas.slice(hayEnc?1:0).forEach((ln,i)=>{
+      const c=part(ln), g=k=>cols[k]!=null?(c[cols[k]]||''):'';
+      const ub=g('ub').toUpperCase(), sku=g('sku')||g('desc');
+      if(!ub&&!sku) return;                       /* fila en blanco: se salta callada */
+      if(!ub){ err.push('Fila '+(i+1)+': sin ubicacion'); return; }
+      if(!sku){ err.push('Fila '+(i+1)+': sin codigo de articulo'); return; }
+      const cl=['A','B','C'].includes(g('clase').toUpperCase())?g('clase').toUpperCase():'C';
+      datos.push({ub,sku,desc:g('desc')||sku,um:(g('um')||'UN').toUpperCase(),clase:cl,
+        costo:num(g('costo')),lote:g('lote')||'SIN LOTE',vence:g('vence'),
+        cant:Math.round(num(g('cant'))),
+        tipo:(g('tipo')||'').toUpperCase()==='PISO'?'PISO':'RACK'});
+    });
+    return {cols,datos,errores:err,sep:{'\t':'tabulacion (Excel)',';':'punto y coma',',':'coma','|':'barra'}[sep],
+            reconocidas:Object.keys(cols).filter(k=>cols[k]!=null)};
+  },
+  /* Escribe lo que ya se leyo y se confirmo. */
+  aplicar(datos){
+    let alta=0,upd=0;
+    const ixP=new Map(DB.productos.map(p=>[p.sku,p]));
+    const ixU=new Set(DB.ubicaciones.map(u=>u.cod));
+    const ixS=new Map(DB.stock.map(s=>[s.ub+'|'+s.sku+'|'+s.lote,s]));
+    let sid=DB.stock.reduce((m,s)=>Math.max(m,s.id),0);
+    datos.forEach(d=>{
+      const p=ixP.get(d.sku);
+      if(!p){ const np={sku:d.sku,desc:d.desc,um:d.um,clase:d.clase,costo:d.costo,
+              familia:(d.desc||d.sku).split(' ')[0].toUpperCase()};
+        DB.productos.push(np); ixP.set(d.sku,np); }
+      else if(d.costo&&!p.costo) p.costo=d.costo;
+      const zona=(d.ub.split('-')[0]||'?').toUpperCase();
+      if(!ixU.has(d.ub)){ ixU.add(d.ub);
+        DB.ubicaciones.push({cod:d.ub,zona,pasillo:0,rack:0,nivel:0,tipo:d.tipo,cap:0}); }
+      if(!CFG.zonas.includes(zona)) CFG.zonas.push(zona);
+      const k=d.ub+'|'+d.sku+'|'+d.lote, ex=ixS.get(k);
+      if(ex){ ex.teorico=d.cant; if(d.vence) ex.vence=d.vence; upd++; }
+      else{ const ns={id:++sid,ub:d.ub,zona,tipo:d.tipo,sku:d.sku,lote:d.lote,
+              vence:d.vence,teorico:d.cant,ultConteo:U.hoy()};
+        DB.stock.push(ns); ixS.set(k,ns); alta++; }
+    });
+    DB.indexar();
+    DB.foto={fecha:U.hoy(),hora:U.ts().slice(11),origen:'Carga de existencias'};
+    DB.log('Configuracion','Cargar existencias',
+      alta+' nueva(s), '+upd+' actualizada(s)');
+    DB.guardar(true);
+    return {alta,upd};
+  },
+  /* Toda accion que deja rastro en el historial se guarda tambien. */
+  log(modulo,accion,detalle){
+    DB.historial.unshift({ts:U.ts(),usuario:CFG.usuario,modulo,accion,detalle});
+    DB.guardar();
+  },
+
+  /* Datos de prueba: llena la base de una vez. Borra lo que haya. */
+  corridaPrueba(nItems){
+    nItems=nItems||400;
+    DB.limpiar(true);
+    U._s=20260731;                                   /* semilla fija */
+
+    const zonas=['A','B','C','D'];
+    CFG.zonas=zonas.slice();
+    CFG.responsables=['Ana Reyes','Luis Pena','Marcos Diaz','Sandra Objio','Elvis Mota'];
+
+    const arts=['Aceite','Arroz','Azucar','Harina','Jabon','Detergente','Papel toalla','Salsa',
+      'Cafe','Leche','Atun','Galleta','Pasta','Sal','Vinagre','Cloro','Servilleta','Cereal',
+      'Avena','Habichuela','Maiz','Mayonesa','Ketchup','Refresco','Agua','Jugo','Desodorante',
+      'Shampoo','Pasta dental','Guante','Mascarilla','Cinta','Bolsa','Film','Etiqueta'];
+    const var_=['premium','familiar','economico','industrial','importado','nacional',
+      'x12','x24','1 L','5 L','500 g','1 kg','20 kg','pack 6','display 24'];
+    const ums=['UN','CJ','SAC','PQ','GL'];
+
+    /* --- Articulos: A caro y poco, C barato y mucho ------------------ */
+    const nSku=Math.max(40,Math.round(nItems*0.55));
+    for(let i=1;i<=nSku;i++){
+      const r=U.rnd();
+      const clase = r<0.20?'A' : (r<0.50?'B':'C');
+      const costo = clase==='A' ? U.ri(800,6000) : (clase==='B'?U.ri(120,800):U.ri(8,120));
+      const desc=U.pick(arts)+' '+U.pick(var_);
+      DB.productos.push({sku:U.id('SKU',i),desc,um:U.pick(ums),clase,
+        costo:+(costo+U.rnd()).toFixed(2),familia:desc.split(' ')[0].toUpperCase()});
+    }
+
+    /* --- Ubicaciones y existencias ----------------------------------- */
+    const hechas=new Set();
+    for(let i=1;i<=nItems;i++){
+      const z=U.pick(zonas), piso=U.rnd()<0.15;
+      const cod = piso ? z+'-PI-'+String(U.ri(1,20)).padStart(2,'0')
+                       : z+'-'+String(U.ri(1,14)).padStart(2,'0')+'-'+U.ri(1,6)+'-'+U.ri(1,4);
+      if(!hechas.has(cod)){ hechas.add(cod);
+        DB.ubicaciones.push({cod,zona:z,pasillo:+(cod.split('-')[1])||0,rack:0,nivel:0,
+          tipo:piso?'PISO':'RACK',cap:0}); }
+      const p=DB.productos[U.ri(0,DB.productos.length-1)];
+      const lote = U.rnd()<0.55 ? 'L'+U.ri(2601,2632) : 'SIN LOTE';
+      if(DB.stock.some(s=>s.ub===cod&&s.sku===p.sku&&s.lote===lote)){ i--; continue; }
+      DB.stock.push({id:i,ub:cod,zona:z,tipo:piso?'PISO':'RACK',sku:p.sku,lote,
+        vence: lote==='SIN LOTE'?'':U.addDays(U.hoy(),U.ri(20,700)),
+        teorico: p.clase==='A'?U.ri(4,90):(p.clase==='B'?U.ri(20,400):U.ri(50,1200)),
+        ultConteo:U.addDays(U.hoy(),-U.ri(1,200))});
+    }
+    DB.indexar();
+    DB.foto={fecha:U.hoy(),hora:U.ts().slice(11),origen:'Corrida de prueba'};
+
+    /* --- Conteos repartidos en los ultimos 6 meses ------------------- Se siembran fechas a proposito en hoy, ayer y esta semana para que los filtros de pe */
+    const dias=[0,0,1,2,3,5,8,12,17,23,29,34,41,48,55,63,72,80,88,97,105,118,130,145,160,175];
+    const armar=(diasAtras)=>{
+      const f=U.addDays(U.hoy(),-diasAtras);
+      const n=U.ri(8,40), usados=new Set(), lineas=[];
+      while(lineas.length<n){
+        const s=DB.stock[U.ri(0,DB.stock.length-1)];
+        if(usados.has(s.id)) continue; usados.add(s.id);
+        const p=DB.prod(s.sku);
+        lineas.push({stockId:s.id,ub:s.ub,sku:s.sku,desc:p.desc,um:p.um,clase:p.clase,
+          costo:p.costo,lote:s.lote,vence:s.vence,teorico:s.teorico,
+          tol:U.tol(p.clase,s.teorico),
+          fisico:null,cerrada:false,decision:'',causa:'',disc:null});
+      }
+      return {id:U.id('CT',++DB.seq.conteo),tipo:U.pick(CFG.tiposConteo),
+        zona:U.pick(zonas),estado:'ABIERTO',
+        criterio:'Corrida de prueba - '+U.pick(['ciclo de clase A','zona completa',
+          'articulos de alta rotacion','pendientes de ciclo','revision de lotes']),
+        responsable:U.pick(CFG.responsables),fechaPlan:f,fechaEjec:null,fechaCierre:null,lineas};
+    };
+    /* Un punado de ubicaciones problematicas */
+    const malas=new Set();
+    while(malas.size<6) malas.add(DB.stock[U.ri(0,DB.stock.length-1)].ub);
+    /* Escribe la cantidad contada: la mayoria cuadra, unas pocas no */
+    const contar=(c,pctDif)=>{
+      c.lineas.forEach(l=>{
+        const r=U.rnd();
+        if(malas.has(l.ub) ? r<0.8 : r<pctDif){        /* diferencia de verdad */
+          const mag=Math.max(2,Math.round(l.teorico*(0.03+U.rnd()*0.22)));
+          l.fisico=Math.max(0,l.teorico+(U.rnd()<0.72?-mag:mag));
+        }else if(r<pctDif+0.06){                       /* roce dentro de tolerancia */
+          const t=Math.max(1,Math.floor(U.tol(l.clase,l.teorico)));
+          l.fisico=Math.max(0,l.teorico+(U.rnd()<0.5?-t:t));
+        }else l.fisico=l.teorico;                      /* cuadro */
+      });
+    };
+    const abrirCaso=(c,l,f)=>{
+      const d={id:U.id('DC',++DB.seq.disc),conteo:c.id,fecha:f,
+        ub:l.ub,sku:l.sku,desc:l.desc,lote:l.lote,clase:l.clase,costo:l.costo,
+        teorico:l.teorico,fisico:l.fisico,dif:DB.dif(l),valor:DB.valor(l),
+        estado:'ABIERTA',responsable:U.pick(CFG.responsables),
+        compromiso:U.addDays(f,U.ri(3,15)),causa:'',resuelvePor:'',fechaResuelta:'',
+        ajustado:false,perdida:0,
+        notas:[{ts:f+' 08:00:00',usuario:U.pick(CFG.responsables),
+          txt:'Caso abierto desde el conteo '+c.id+' - sistema '+U.n(l.teorico)+
+              ', contado '+U.n(l.fisico)+' ('+(DB.dif(l)>0?'+':'')+U.n(DB.dif(l))+')'}]};
+      l.cerrada=true; l.decision='En investigacion - '+d.id; l.disc=d.id;
+      DB.discrepancias.unshift(d);
+      return d;
+    };
+
+    let ok=0,disc=0,inv=0;
+    dias.forEach((da,i)=>{
+      const c=armar(da), f=U.addDays(U.hoy(),-da);
+      /* Dos recientes quedan a medias, para probar la hoja de conteo en curso */
+      if(i===1||i===4){
+        c.lineas.forEach((l,k)=>{ if(k<Math.floor(c.lineas.length*0.45)) l.fisico=l.teorico; });
+        c.fechaEjec=f; DB.conteos.push(c); return;
+      }
+      /* Uno de cada tres cuadra limpio; uno de cada cinco sale feo */
+      contar(c, i%5===0 ? 0.14 : (i%3===0 ? 0 : 0.035));
+      const dif=c.lineas.filter(l=>DB.estadoLinea(l)==='DIFERENCIA');
+      c.lineas.forEach(l=>{
+        const e=DB.estadoLinea(l);
+        if(e==='EXACTO'){   l.cerrada=true; l.decision='Sin diferencia'; }
+        if(e==='TOLERADO'){ l.cerrada=true; l.decision='Dentro de tolerancia'; }
+      });
+      /* Reparte las tres salidas para que el archivo tenga de todo */
+      if(!dif.length){ ok++; }
+      else if(U.rnd()<0.55){                            /* CERRADO CON DISCREPANCIA */
+        disc++;
+        dif.forEach(l=>{ l.cerrada=true; l.confirmada=true; l.causa=U.pick(CFG.causas);
+          l.quien=U.pick(CFG.responsables); l.cuando=f;
+          l.decision='Diferencia confirmada - '+l.causa; });
+      }else{                                            /* EN INVESTIGACION */
+        inv++;
+        dif.forEach(l=>{
+          const d=abrirCaso(c,l,f);
+          const r=U.rnd();
+          if(r<0.45){                                   /* ya resuelto */
+            d.estado='RESUELTA'; d.causa=U.pick(CFG.causas);
+            d.resuelvePor=U.pick(CFG.responsables);
+            d.fechaResuelta=U.addDays(f,U.ri(2,20));
+            d.perdida=d.valor<0?Math.abs(d.valor):0;
+            d.notas.push({ts:d.fechaResuelta+' 16:30:00',usuario:d.resuelvePor,
+              txt:'Caso cerrado - '+d.causa+(d.perdida?' - perdida confirmada':' - sin perdida')});
+          }else if(r<0.70){ d.estado='EN INVESTIGACION';
+            d.notas.push({ts:U.addDays(f,2)+' 11:00:00',usuario:d.responsable,
+              txt:'Se reviso la ubicacion vecina, sigue sin aparecer'});
+          }
+        });
+      }
+      c.estado='CERRADO'; c.fechaEjec=f; c.fechaCierre=f;
+      DB.conteos.push(c);
+      c.lineas.forEach(l=>{ const s=DB.stock.find(x=>x.id===l.stockId); if(s) s.ultConteo=f; });
+    });
+    /* Cuatro quedaron programados y nunca se ejecutaron */
+    [4,11,26,54].forEach(da=>{ const c=armar(da); c.fechaPlan=U.addDays(U.hoy(),-da);
+      c.fechaEjec=null; c.fechaCierre=null; c.estado='ABIERTO'; DB.conteos.push(c); });
+    DB.conteos.sort((a,b)=>String(b.fechaPlan).localeCompare(String(a.fechaPlan)));
+
+    const abiertos=DB.discrepancias.filter(d=>d.estado!=='RESUELTA').length;
+    DB.log('Configuracion','Corrida de prueba',
+      `${U.n(nItems)} existencias, ${U.n(DB.productos.length)} articulos, `+
+      `${U.n(DB.conteos.length)} conteos (${ok} ok, ${disc} con discrepancia, ${inv} investigados), `+
+      `${U.n(DB.discrepancias.length)} caso(s), ${abiertos} sin resolver`);
+    /* Data de prueba */
+    DB.olvidar();
+    return {items:DB.stock.length,skus:DB.productos.length,ubic:DB.ubicaciones.length,
+            conteos:DB.conteos.length,ok,disc,inv,casos:DB.discrepancias.length,abiertos};
+  }
+};
+
+/* ==========  4. COMPONENTES DE INTERFAZ REUTILIZABLES ==================== */
+const UI = {
+  msg(txt,tipo){
+    const d=document.createElement('div');
+    d.className='toast '+(tipo||'');
+    d.textContent=txt;
+    document.getElementById('msg').appendChild(d);
+    document.getElementById('ft-status').textContent=txt;
+    setTimeout(()=>d.remove(),3200);
+  },
+  st(estado){
+    const map={
+      'EXACTO':'g','TOLERADO':'a','DIFERENCIA':'r','PENDIENTE':'n','SIN CONTAR':'n',
+      'ABIERTO':'b','CERRADO':'g','CONTADO':'a',
+      'ABIERTA':'r','EN INVESTIGACION':'a','RESUELTA':'g',
+      'APLICADO':'g','SIN AJUSTE':'n'
+    };
+    return `<span class="st ${map[estado]||'n'}">${U.esc(estado)}</span>`;
+  },
+  num(v,d){ const c=v<0?'neg':(v>0?'pos':''); return `<span class="${c}">${U.n(v,d)}</span>`; },
+
+  /* --- Tabla genérica: orden, paginación, selección, exportación ------ */
+  tabla(host,{cols,rows,state,onRow,onSel,vacio}){
+    const st=state;
+    st.sort??=cols[0].key; st.dir??=1; st.pag??=1; st.per??=CFG.filasPorPagina;
+    const data=[...rows];
+    const col=cols.find(c=>c.key===st.sort);
+    if(col&&col.sort!==false){
+      const val=r=>col.val?col.val(r):r[col.key];
+      data.sort((a,b)=>{
+        const x=val(a),y=val(b);
+        if(x==null) return 1; if(y==null) return -1;
+        return (typeof x==='number'&&typeof y==='number' ? x-y : U.col.compare(String(x),String(y)))*st.dir;
+      });
+    }
+    const tot=data.length, tp=Math.max(1,Math.ceil(tot/st.per));
+    if(st.pag>tp) st.pag=tp;
+    const page=data.slice((st.pag-1)*st.per, st.pag*st.per);
+
+    const th=cols.map(c=>`<th class="${c.sort===false?'nos':''} ${c.a||''}" data-k="${c.key}"
+        style="${c.w?'width:'+c.w+'px':''}">${U.esc(c.label)}${
+        st.sort===c.key&&c.sort!==false?`<span class="ar">${st.dir>0?'▲':'▼'}</span>`:''}</th>`).join('');
+    /* data-l alimenta la vista apilada de móvil: la etiqueta viaja con la celda */
+    const tb = page.length? page.map((r,i)=>`<tr data-i="${i}" class="${onSel&&st.selId===r[st.selKey||'id']?'sel':''}">`+
+        cols.map(c=>`<td class="${c.a||''} ${c.cls?c.cls(r):''}" data-l="${U.esc(c.label)}">${c.fmt?c.fmt(r):U.esc(r[c.key])}</td>`).join('')+'</tr>').join('')
+      : `<tr><td class="t-empty" colspan="${cols.length}">${vacio||'Sin registros para los filtros aplicados.'}</td></tr>`;
+
+    host.innerHTML=`<div class="tbl-wrap"><table class="t"><thead><tr>${th}</tr></thead><tbody>${tb}</tbody></table></div>
+      <div class="pag"><span>${U.n(tot)} registro(s) · página ${st.pag} de ${tp}</span>
+      <span class="sp">
+        <label class="muted">Filas</label>
+        <select data-per>${[10,25,50,100,200].map(n=>`<option ${n===st.per?'selected':''}>${n}</option>`).join('')}</select>
+        <button class="btn xs no-mov" data-pg="1" ${st.pag===1?'disabled':''}>«</button>
+        <button class="btn xs" data-pg="${st.pag-1}" ${st.pag===1?'disabled':''}>‹</button>
+        <button class="btn xs" data-pg="${st.pag+1}" ${st.pag===tp?'disabled':''}>›</button>
+        <button class="btn xs no-mov" data-pg="${tp}" ${st.pag===tp?'disabled':''}>»</button>
+      </span></div>`;
+
+    host.querySelectorAll('th[data-k]').forEach(t=>{
+      const c=cols.find(x=>x.key===t.dataset.k); if(c.sort===false) return;
+      t.onclick=()=>{ if(st.sort===t.dataset.k) st.dir*=-1; else{st.sort=t.dataset.k;st.dir=1;} st.render(); };
+    });
+    host.querySelectorAll('[data-pg]').forEach(b=>b.onclick=()=>{st.pag=+b.dataset.pg;st.render();});
+    host.querySelector('[data-per]').onchange=e=>{st.per=+e.target.value;st.pag=1;st.render();};
+    if(onRow) host.querySelectorAll('tbody tr[data-i]').forEach(tr=>{
+      tr.style.cursor='pointer';
+      tr.ondblclick=()=>onRow(page[+tr.dataset.i]);
+      tr.onclick=e=>{ if(e.target.closest('button,input,select')) return;
+        if(onSel){ st.selId=page[+tr.dataset.i][st.selKey||'id']; onSel(page[+tr.dataset.i]); } };
+    });
+    st.datosVisibles=data;
+  },
+
+  /* Menú de acciones secundarias */
+  _mas:[],
+  mas(items){
+    UI._mas=items;
+    if(!items.length) return '';
+    return `<span class="mas"><button class="btn" data-mas-btn title="Más acciones">⋮</button>
+      <span class="mas-lista">${items.map((i,k)=>
+        `<button class="btn" data-mas-i="${k}">${U.esc(i.txt)}</button>`).join('')}</span></span>`;
+  },
+  bindMas(){
+    const b=document.querySelector('[data-mas-btn]'); if(!b) return;
+    const lista=b.parentElement.querySelector('.mas-lista');
+    b.onclick=e=>{ e.stopPropagation(); lista.classList.toggle('on'); };
+    lista.querySelectorAll('[data-mas-i]').forEach(x=>x.onclick=()=>{
+      lista.classList.remove('on');
+      const it=UI._mas[+x.dataset.masI]; if(it&&it.fn) it.fn();
+    });
+  },
+  modal(titulo,cuerpo,acciones){
+    const host=document.getElementById('modal-host');
+    host.innerHTML=`<div class="mask"><div class="modal">
+      <div class="panel-hd">${U.esc(titulo)}<button class="btn xs" data-x>Cerrar</button></div>
+      <div class="panel-bd">${cuerpo}</div>
+      <div class="modal-ft">${acciones.map((a,i)=>`<button class="btn ${a.cls||''}" data-a="${i}">${U.esc(a.txt)}</button>`).join('')}</div>
+    </div></div>`;
+    const cerrar=()=>host.innerHTML='';
+    host.querySelector('[data-x]').onclick=cerrar;
+    host.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>{
+      const a=acciones[+b.dataset.a];
+      if(!a.fn||a.fn(host)!==false) cerrar();
+    });
+    const f=host.querySelector('input,select,textarea'); if(f) f.focus();
+    return {cerrar,host};
+  },
+  confirmar(titulo,texto,fn){
+    UI.modal(titulo,`<p>${U.esc(texto)}</p>`,[
+      {txt:'Cancelar'},{txt:'Confirmar',cls:'pri',fn}
+    ]);
+  },
+  barras(items,fmt){
+    const max=Math.max(1,...items.map(i=>Math.abs(i.v)));
+    return items.map(i=>`<div class="chart-row">
+      <span class="cl" title="${U.esc(i.l)}">${U.esc(i.l)}</span>
+      <span class="bar"><i class="${i.c||''}" style="width:${Math.abs(i.v)/max*100}%"></i></span>
+      <span class="cv">${fmt?fmt(i.v):U.n(i.v)}</span></div>`).join('');
+  }
+};
+
+/* ==========  5. PANTALLAS ============================================== */
+const ST={};                      // estado de tablas por pantalla (persistente)
+const VIEWS={};
+const el=id=>document.getElementById(id);
+const hd=(titulo,ruta,botones)=>`<div class="view-hd"><h1>${U.esc(titulo)}</h1>
+  <span class="crumb">${U.esc(ruta)}</span><span class="sp">${botones||''}</span></div>`;
+
+/* EL CICLO DE VIDA, EN CORTO El conteo tiene dos estados y nada mas */
+
+/* LA LINEA DE TRABAJO Cuatro pasos en fila, siempre en el mismo orden y siempre a la vista */
+const ETAPAS_INV=['Planificar','Contar'];
+const PEND_ETAPA={
+  Planificar:()=>0,
+  Contar    :()=>DB.conteos.filter(c=>c.estado==='ABIERTO').length
+};
+/* Cabecera de los dos pasos del trabajo. */
+const hdInv=(etapa,sub,acc)=>
+  `<div class="view-hd"><h1>Inventario</h1>
+     <span class="crumb">${U.esc(sub||'')}</span>
+     <span class="sp"><button class="btn" data-cargar>Cargar existencias</button>${acc||''}</span></div>
+   ${avisoFoto()}
+   <div class="etapas">
+     ${ETAPAS_INV.map((e,i)=>
+       `<button class="et ${e===etapa?'on':''}" data-et="${e}">
+         <span class="n">${i+1}</span>${e}</button>`).join('')}
+   </div>`;
+/* Aviso de foto vieja */
+const avisoFoto=()=>{
+  const v=DB.fotoVieja();
+  if(v===null) return `<div class="pista">Todavia no hay existencias cargadas.
+    Use el boton Cargar existencias, arriba a la derecha.</div>`;
+  if(v>1) return `<div class="pista">La foto de existencias es del ${DB.foto.fecha} (${U.n(v)} dias).
+    Mientras mas vieja, menos vale la diferencia que se detecte: conviene volver a cargarla.</div>`;
+  return '';
+};
+const bindEtapas=()=>{
+  el('view').querySelectorAll('[data-et]').forEach(b=>
+    b.onclick=()=>APP.ir('inventario',{etapa:b.dataset.et}));
+  el('view').querySelectorAll('[data-cargar]').forEach(b=>
+    b.onclick=()=>APP.ir('configuracion',{foco:'cargar'}));
+};
+
+VIEWS.inventario=(p)=>{
+  ST.inv??={etapa:DB.conteos.some(c=>c.estado==='ABIERTO')?'Contar':'Planificar'};
+  if(p&&p.etapa&&ETAPAS_INV.includes(p.etapa)) ST.inv.etapa=p.etapa;
+  ({Planificar:VIEWS.nuevo, Contar:VIEWS.conteos})[ST.inv.etapa]({etapa:ST.inv.etapa});
+};
+
+/* EL ESTATUS DEL INVENTARIO TERMINADO Cuando un conteo se cierra sale de la etapa Contar y vive en Reportes con uno de estos tres estatus. */
+/* Donde vive cada inventario */
+const enConteo=c=>c.estado==='ABIERTO';
+const enReportes=c=>c.estado==='CERRADO';
+
+const EST_OK='CUADRÓ', EST_DIF='CON DIFERENCIAS', EST_INC='INCOMPLETO';
+const ESTATUS=c=>{
+  const a=DB.avance(c);
+  if(c.estado==='ABIERTO')
+    return {k:'EN CONTEO', cls:'b', accion:'Seguir contando', modo:'seguir',
+            nota:a.h+' de '+a.t+' linea(s) contadas'};
+  const sinContar=c.lineas.filter(l=>l.sinContar).length;
+  const extra = sinContar?' - '+U.n(sinContar)+' linea(s) sin contar, fuera de la exactitud':'';
+  const ab=DB.discAbiertas(c.id).length;
+  const tuvo=DB.discDe(c.id).length;
+  const conf=c.lineas.filter(l=>l.confirmada).length;
+  /* ROJO: hubo diferencia real, este confirmada o en investigacion */
+  if(ab)        return {k:EST_DIF, cls:'r', accion:'Reiniciar', modo:'reiniciar',
+                        nota:U.n(ab)+' caso(s) sin resolver'+extra};
+  if(tuvo||conf)return {k:EST_DIF, cls:'r', accion:'Reabrir', modo:'reabrir',
+                        nota:U.n(conf)+' diferencia(s) confirmadas'+(tuvo?', '+U.n(tuvo)+' caso(s) resueltos':'')+extra};
+  /* GRIS: lo contado cuadro, pero faltaron lineas */
+  if(sinContar) return {k:EST_INC, cls:'n', accion:'Reiniciar', modo:'reiniciar',
+                        nota:U.n(sinContar)+' de '+U.n(c.lineas.length)+' linea(s) nunca se contaron'};
+  /* VERDE: se conto todo y cuadro todo */
+  return {k:EST_OK, cls:'g', accion:'Reabrir', modo:'reabrir'};
+};
+
+/* ---------- 5.2 CONTEOS ---------- */
+VIEWS.conteos=()=>{
+  const abiertos=DB.conteos.filter(enConteo);
+  if(abiertos.length){
+    const guardado=ST.cap&&ST.cap.id&&DB.conteo(ST.cap.id);
+    return VIEWS.captura({id:(guardado&&enConteo(guardado))?guardado.id:abiertos[0].id});
+  }
+  el('view').innerHTML=hdInv('Contar','No hay ningun inventario abierto ahora mismo.',
+    `<button class="btn pri" data-nuevo>Nuevo conteo</button>`)+
+  `<div class="panel"><div class="panel-bd">
+     <div class="muted">Aqui no se guarda nada: esta pestana es la hoja del inventario que
+     este contando. En cuanto le da a Terminar, el inventario pasa a Resultados con su estatus.
+     Empiece uno nuevo en Planificar.</div>
+   </div></div>`;
+  el('view').querySelector('[data-nuevo]').onclick=()=>APP.ir('inventario',{etapa:'Planificar'});
+  bindEtapas(); UI.bindMas();
+};
+
+/* ---------- 5.3 HOJA DE CONTEO ---------- */
+VIEWS.captura=(p)=>{
+  const abiertos=DB.conteos.filter(enConteo);
+  const c=DB.conteo(p&&p.id)||abiertos[0];
+  if(!c){ APP.ir('inventario',{etapa:'Contar'}); return; }
+  ST.cap??={f:{modo:'Todas'}};
+  ST.cap.id=c.id;
+  ST.cap.render=()=>VIEWS.captura({id:c.id});
+  const f=ST.cap.f;
+  const editable = c.estado==='ABIERTO';
+  /* CONTEO CIEGO: mientras se cuenta no se ve sistema, diferencia, valor ni estado. */
+
+  /* Orden de recorrido físico: por ubicación, como camina el contador */
+  let filas=[...c.lineas].sort((a,b)=>U.col.compare(a.ub,b.ub)||U.col.compare(a.sku,b.sku));
+  if(f.modo==='Pendientes')   filas=filas.filter(l=>l.fisico==null);
+
+  /* La hoja se dibuja por bloques */
+  const porHoja=Math.max(20,CFG.lineasPorHoja||150);
+  const bloques=Math.max(1,Math.ceil(filas.length/porHoja));
+  if(f.bloque==null||f.bloque>=bloques) f.bloque=0;
+
+  /* Filas y pie como funciones */
+  const filaHTML=(l,i)=>{
+    return `<tr data-id="${l.stockId}">
+          <td class="c muted" data-l="#">${i+1}</td>
+          <td class="mono" data-l="Ubicación">${l.ub}</td>
+          <td class="mono" data-l="SKU">${l.sku}</td>
+          <td data-l="Descripción">${U.esc(l.desc)}</td>
+          <td class="mono" data-l="Lote">${l.lote}</td>
+          <td class="c" data-l="UM">${l.um}</td>
+          <td class="r" data-l="Contado"><span class="cap-wrap">
+              <button class="btn xs mov" data-menos="${l.stockId}" ${editable?'':'disabled'}>−</button>
+              <input class="cap" inputmode="numeric" data-id="${l.stockId}"
+                value="${l.fisico??''}" ${editable?'':'disabled'}>
+              <button class="btn xs mov" data-mas="${l.stockId}" ${editable?'':'disabled'}>+</button>
+            </span></td></tr>`;
+  };
+  const bloqueHTML=n=>{
+    const d0=n*porHoja, vis=filas.slice(d0,d0+porHoja);
+    return vis.length ? vis.map((l,i)=>filaHTML(l,d0+i)).join('')
+                      : `<tr><td class="t-empty" colspan="7">No hay líneas en esta vista.</td></tr>`;
+  };
+  const pagHTML=n=>{
+    const d0=n*porHoja, vis=Math.min(porHoja,filas.length-d0);
+    return `<span>Líneas ${U.n(filas.length?d0+1:0)}–${U.n(d0+Math.max(0,vis))} de ${U.n(filas.length)}
+         ${filas.length!==c.lineas.length?' (filtradas de '+U.n(c.lineas.length)+')':''}</span>
+       ${bloques>1?`<span class="inline" style="margin-left:10px">
+         <button class="btn xs" data-bloque="${n-1}" ${n===0?'disabled':''}>‹ Bloque anterior</button>
+         <b>${n+1} / ${bloques}</b>
+         <button class="btn xs" data-bloque="${n+1}" ${n===bloques-1?'disabled':''}>Bloque siguiente ›</button>
+       </span>`:''}
+`;
+  };
+
+
+  el('view').innerHTML=hdInv('Contar',
+    'Escriba la cantidad que cuenta en cada línea.',
+    `<button class="btn pri" id="btn-fin" ${editable?'':'disabled'}>Terminar</button>`+
+    UI.mas([{txt:'Exportar hoja',fn:()=>ST.cap.exportar()},
+            {txt:'Eliminar inventario',fn:()=>ACC.eliminarConteo(c)}]))+
+  `<div class="sheet-bar">
+     <div class="sb-item"><span class="l">Inventario</span>
+       ${abiertos.length>1
+         ? `<select id="inv-sel">${abiertos.map(x=>`<option value="${x.id}" ${
+             x.id===c.id?'selected':''}>${x.id} - zona ${x.zona} - ${DB.avance(x).h}/${DB.avance(x).t}</option>`).join('')}</select>`
+         : `<b>${c.id}</b>`}</div>
+     <div class="sb-item"><span class="l">Zona</span><b>${c.zona}</b></div>
+     <div class="sb-item no-mov"><span class="l">Contador</span><b>${U.esc(c.responsable)}</b></div>
+     <div class="sb-item"><span class="l">Avance</span><b id="rs-avance">0/0</b>
+       <span class="bar" style="width:90px"><i id="rs-barra" style="width:0%"></i></span>
+       <b id="rs-pct" style="width:52px;text-align:right"></b></div>
+     <div class="sb-item" style="margin-left:auto">
+       <span class="l">Ir a</span>
+       <input type="text" id="scan" placeholder="Ubicación, SKU o lote + Enter" style="width:230px" ${editable?'':'disabled'}>
+     </div>
+     <div class="sb-item">
+       <select id="modo">${opts(['Todas','Pendientes'],f.modo)}</select>
+     </div>
+   </div>
+   <div class="panel">
+     <div class="tbl-wrap" style="max-height:calc(100vh - 190px)">
+      <table class="t hoja">
+        <thead><tr>
+          <th class="c" style="width:34px">#</th>
+          <th style="width:104px">Ubicación</th>
+          <th style="width:96px">SKU</th>
+          <th>Descripción</th>
+          <th style="width:96px">Lote</th>
+          <th style="width:42px" class="c">UM</th>
+          <th style="width:150px" class="r">Contado</th>
+        </tr></thead>
+        <tbody>${bloqueHTML(f.bloque)}</tbody>
+      </table>
+     </div>
+     <div class="pag" id="cap-pag">${pagHTML(f.bloque)}</div>
+   </div>
+   <div class="muted">Enter o flecha abajo pasa a la linea siguiente - Suprimir borra la cantidad.
+   El sistema y las diferencias se ven al pulsar Terminar.</div>`;
+
+  /* --- Resumen: se recalcula sin volver a dibujar la tabla ------------- */
+  const refrescar=()=>{
+    const a=DB.avance(c);
+    el('rs-avance').textContent=a.h+'/'+a.t;
+    el('rs-barra').style.width=a.pct+'%';
+    el('rs-barra').className=a.pct===100?'g':'';
+    el('rs-pct').textContent=U.p(a.pct);
+  };
+  const guardar=(id,valor)=>{
+    const l=c.lineas.find(x=>x.stockId==id);
+    l.fisico = (valor===''||valor==null) ? null : Math.max(0,Math.round(+valor)||0);
+    refrescar();
+    DB.guardar();   /* cada cantidad capturada sobrevive a un F5 */
+  };
+
+  const ver=e=>{ if(e&&e.scrollIntoView) e.scrollIntoView({block:'center'}); };
+  const tbody=el('view').querySelector('table.hoja tbody');
+  const caps=()=>[...tbody.querySelectorAll('input.cap')];
+  const linea=id=>c.lineas.find(x=>x.stockId==id);
+
+  /* Un solo juego de escuchadores para toda la hoja (delegación). */
+  const irBloque=(n,alFinal,id)=>{
+    if(n<0||n>=bloques) return;
+    f.bloque=n;
+    tbody.innerHTML=bloqueHTML(n);            // solo el cuerpo: el resto no se toca
+    el('cap-pag').innerHTML=pagHTML(n);
+    enlazarBloques();
+    const arr=caps();
+    const t=id ? tbody.querySelector(`input.cap[data-id="${id}"]`)
+               : (alFinal?arr[arr.length-1]:arr[0]);
+    if(t&&editable){ t.focus(); ver(t); }
+  };
+  const enlazarBloques=()=>{
+    el('view').querySelectorAll('[data-bloque]').forEach(b=>b.onclick=()=>irBloque(+b.dataset.bloque,false));
+  };
+  tbody.addEventListener('input',e=>{
+    const i=e.target;
+    if(i.classList&&i.classList.contains('cap')) guardar(i.dataset.id,i.value);
+  });
+  tbody.addEventListener('focusin',e=>{
+    const i=e.target;
+    if(i.classList&&i.classList.contains('cap')){ i.select(); setTimeout(()=>ver(i),300); }
+  });
+  tbody.addEventListener('keydown',e=>{
+    const i=e.target;
+    if(!i.classList||!i.classList.contains('cap')) return;
+    const arr=caps(), k=arr.indexOf(i);
+    const saltar=n=>{
+      const t=arr[n];
+      if(t){ t.focus(); ver(t); return; }
+      if(n>=arr.length && f.bloque<bloques-1) irBloque(f.bloque+1,false);
+      else if(n<0 && f.bloque>0) irBloque(f.bloque-1,true);
+      else i.blur();
+    };
+    if(e.key==='Enter'||e.key==='ArrowDown'){ e.preventDefault(); saltar(k+1); }
+    if(e.key==='ArrowUp'){ e.preventDefault(); saltar(k-1); }
+  });
+  const si=el('inv-sel');
+  if(si) si.onchange=e=>APP.ir('captura',{id:e.target.value});
+
+  tbody.addEventListener('click',e=>{
+    const b=e.target.closest&&e.target.closest('button'); if(!b) return;
+    const id=b.dataset.mas||b.dataset.menos; if(!id) return;
+    const inp=tbody.querySelector(`input.cap[data-id="${id}"]`);
+    const v=Math.max(0,(inp.value===''?0:(+inp.value||0))+(b.dataset.mas?1:-1));
+    inp.value=v; guardar(id,v);
+  });
+  el('view').querySelectorAll('[data-bloque]').forEach(b=>b.onclick=()=>irBloque(+b.dataset.bloque,false));
+
+  /* --- Ir a: escanear o teclear y saltar a la línea -------------------- */
+  el('scan').addEventListener('keydown',e=>{
+    if(e.key!=='Enter') return;
+    const q=el('scan').value.trim().toLowerCase();
+    if(!q) return;
+    const idx=filas.findIndex(l=>(l.ub+' '+l.sku+' '+l.lote).toLowerCase().includes(q));
+    if(idx<0){ UI.msg('No se encontró "'+el('scan').value+'" en este conteo','err'); return; }
+    el('scan').value='';
+    const bl=Math.floor(idx/porHoja);
+    if(bl!==f.bloque){ irBloque(bl,false,filas[idx].stockId); return; }
+    const inp=tbody.querySelector(`input.cap[data-id="${filas[idx].stockId}"]`);
+    ver(inp); inp.focus();
+  });
+  el('modo').onchange=e=>{ f.modo=e.target.value; f.bloque=0; ST.cap.render(); };
+
+  /* --- Acciones de la hoja -------------------------------------------- */
+  el('btn-fin').onclick=()=>ACC.terminar(c);
+  ST.cap.exportar=()=>U.csv('conteo_'+c.id,[
+    {key:'ub',label:'Ubicación'},{key:'sku',label:'SKU'},{key:'desc',label:'Descripción'},
+    {key:'lote',label:'Lote'},{key:'um',label:'UM'},
+    {key:'fis',label:'Contado',raw:l=>DB.fis(l)??''}],filas);
+  bindEtapas(); UI.bindMas();
+  refrescar();
+  /* Al cambiar de bloque el foco continúa donde iba, no vuelve al inicio */
+  const arr=caps();
+  let destino=null;
+  if(ST.cap.irA==='ultima')       destino=arr[arr.length-1];
+  else if(ST.cap.irA==='primera') destino=arr[0];
+  else if(ST.cap.irA)             destino=tbody.querySelector(`input.cap[data-id="${ST.cap.irA}"]`);
+  else                            destino=arr.find(i=>i.value==='')||arr[0];
+  ST.cap.irA=null;
+  if(destino&&editable){ destino.focus(); ver(destino); }
+};
+
+/* ---------- 5.3b ARMAR CONTEO ------------------------------------------ El conteo se arma línea por línea. */
+VIEWS.nuevo=()=>{
+  ST.nv??={render:VIEWS.nuevo,
+    f:{zona:'',clase:'',tipo:'',dias:'',q:''},
+    sel:new Set(),
+    cab:{tipo:CFG.tiposConteo[0],resp:CFG.responsables[0]||'',fecha:U.hoy(),criterio:''},
+    azar:20};
+  const f=ST.nv.f, sel=ST.nv.sel, cab=ST.nv.cab;
+  const hoy=U.hoy();
+  const dias=s=>Math.round((new Date(hoy)-new Date(s.ultConteo))/864e5);
+  const porId=new Map(DB.stock.map(s=>[s.id,s]));
+
+  /* Universo disponible según los filtros vigentes */
+  const cand=DB.stock.filter(s=>{
+    const p=DB.prod(s.sku);
+    if(f.zona && s.zona!==f.zona) return false;
+    if(f.clase && p.clase!==f.clase) return false;
+    if(f.tipo && s.tipo!==f.tipo) return false;
+    if(f.dias && dias(s) < +f.dias) return false;
+    if(f.q){
+      const q=f.q.toLowerCase();
+      if(!(s.ub+' '+s.sku+' '+p.desc+' '+s.lote).toLowerCase().includes(q)) return false;
+    }
+    return true;
+  });
+
+  /* Resumen de lo seleccionado */
+  const elegidas=[...sel].map(id=>porId.get(id)).filter(Boolean);
+  const skus=new Set(elegidas.map(s=>s.sku)).size;
+  const zonasSel=[...new Set(elegidas.map(s=>s.zona))].sort();
+
+  el('view').innerHTML=hdInv('Planificar',
+    'Elija qué líneas se van a contar: a mano, al azar o pegando una lista.',
+    `<button class="btn pri" data-crear ${elegidas.length?'':'disabled'}>Crear conteo (${U.n(elegidas.length)})</button>`)+
+  `<div class="sheet-bar">
+     <div class="sb-item"><span class="l">Responsable</span>
+       <input type="text" data-cab="resp" list="dl-resp" value="${U.esc(cab.resp)}" placeholder="Quien cuenta" style="width:150px">
+       <datalist id="dl-resp">${CFG.responsables.map(r=>`<option value="${U.esc(r)}">`).join('')}</datalist></div>
+   </div>
+   <div class="panel">
+     <div class="filters">
+       <div class="f"><label>Buscar artículo, ubicación o lote</label>
+         <input type="text" data-q value="${U.esc(f.q)}" placeholder="SKU, descripción, ubicación o lote"></div>
+       <div class="f"><label>Zona</label><select data-z>${opts([''].concat(CFG.zonas),f.zona)}</select></div>
+       <div class="f"><label>Clase ABC</label><select data-cl>${opts(['','A','B','C'],f.clase)}</select></div>
+       <div class="f"><label>Ubicación</label><select data-tu>${opts(['','RACK','PISO'],f.tipo)}</select></div>
+       <div class="f"><label>Sin contar hace (días)</label>
+         <input type="number" data-dias value="${f.dias}" min="0" step="5" placeholder="cualquiera" style="width:110px"></div>
+       <div class="f"><label>&nbsp;</label><button class="btn" data-limpiar>Limpiar filtros</button></div>
+     </div>
+     <div class="filters">
+       <div class="f"><label>Agregar a la selección</label>
+         <span class="inline">
+           <button class="btn" data-todo>Todo lo filtrado (${U.n(cand.length)})</button>
+           <input type="number" data-n value="${ST.nv.azar}" min="1" step="5" style="width:70px">
+           <button class="btn" data-azar>Al azar</button>
+           <button class="btn" data-pegar>Pegar lista de artículos</button>
+         </span></div>
+       <div class="f"><label>&nbsp;</label>
+         <span class="inline">
+           <button class="btn dan" data-nada>Vaciar selección</button>
+         </span></div>
+       <div class="f" style="margin-left:auto"><label>Ver</label>
+         <select data-ver>${opts(['Todo el universo','Solo seleccionadas'],ST.nv.ver||'Todo el universo')}</select></div>
+     </div>
+     <div id="nv-t"></div>
+   </div>`;
+
+  const filas = (ST.nv.ver==='Solo seleccionadas') ? elegidas : cand;
+  UI.tabla(el('nv-t'),{state:ST.nv,rows:filas,
+    vacio:'Ninguna existencia cumple estos filtros.',cols:[
+    {key:'sel',label:'',w:28,a:'c',sort:false,
+      fmt:s=>`<input type="checkbox" data-sel="${s.id}" ${sel.has(s.id)?'checked':''}>`},
+    {key:'ub',label:'Ubicación',w:104,cls:()=>'mono'},
+    {key:'tipo',label:'Tipo',w:54},
+    {key:'sku',label:'SKU',w:96,cls:()=>'mono'},
+    {key:'desc',label:'Descripción',val:s=>DB.prod(s.sku).desc,fmt:s=>U.esc(DB.prod(s.sku).desc)},
+    {key:'lote',label:'Lote',w:96,cls:()=>'mono'},
+    {key:'clase',label:'ABC',w:42,a:'c',val:s=>DB.prod(s.sku).clase,fmt:s=>DB.prod(s.sku).clase},
+    {key:'teorico',label:'Existencia',w:82,a:'r',fmt:s=>U.n(s.teorico)},
+    {key:'ultConteo',label:'Último conteo',w:104},
+    {key:'dias',label:'Días',w:60,a:'r',val:s=>dias(s),
+      fmt:s=>{const d=dias(s), lim=CFG.frecuencia[DB.prod(s.sku).clase];
+        return `<span class="${d>lim?'neg':''}">${U.n(d)}</span>`;}}
+  ]});
+
+  /* --- Interacción ---------------------------------------------------- */
+  bindFiltros(ST.nv,{'[data-q]':'q','[data-z]':'zona','[data-cl]':'clase','[data-tu]':'tipo','[data-dias]':'dias'});
+  el('view').querySelectorAll('[data-cab]').forEach(i=>{
+    const ev=(i.tagName==='INPUT'&&i.type==='text')?'input':'change';
+    i.addEventListener(ev,()=>{ cab[i.dataset.cab]=i.value; });
+  });
+  el('view').querySelectorAll('[data-sel]').forEach(ch=>ch.onchange=()=>{
+    const id=+ch.dataset.sel;
+    ch.checked?sel.add(id):sel.delete(id);
+    ch.closest('tr').classList.toggle('sel',ch.checked);
+    ST.nv.render();
+  });
+  el('view').querySelector('[data-ver]').onchange=e=>{ ST.nv.ver=e.target.value; ST.nv.pag=1; ST.nv.render(); };
+  el('view').querySelector('[data-todo]').onclick=()=>{
+    if(!cand.length) return UI.msg('No hay líneas que cumplan el filtro','warn');
+    cand.forEach(s=>sel.add(s.id));
+    UI.msg(U.n(cand.length)+' línea(s) agregadas','ok'); ST.nv.render();
+  };
+  el('view').querySelector('[data-nada]').onclick=()=>{ sel.clear(); ST.nv.render(); };
+  el('view').querySelector('[data-azar]').onclick=()=>{
+    const n=+el('view').querySelector('[data-n]').value||0;
+    ST.nv.azar=n;
+    /* Sorteo real, distinto cada día: mezcla y toma las primeras n */
+    const pool=cand.filter(s=>!sel.has(s.id));
+    if(!pool.length) return UI.msg('No quedan líneas disponibles con este filtro','warn');
+    for(let i=pool.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [pool[i],pool[j]]=[pool[j],pool[i]]; }
+    const tomadas=pool.slice(0,n);
+    tomadas.forEach(s=>sel.add(s.id));
+    UI.msg(tomadas.length+' línea(s) tomadas al azar'+(tomadas.length<n?' (era todo lo disponible)':''),'ok');
+    ST.nv.render();
+  };
+  el('view').querySelector('[data-pegar]').onclick=()=>{
+    UI.modal('Pegar lista de artículos o ubicaciones',
+      `<p class="muted">Un código por línea. Se aceptan SKU y ubicaciones; se agregan todas
+       las existencias que coincidan, respetando los filtros de arriba.</p>
+       <textarea rows="9" style="width:100%" data-lista
+         placeholder="ARZ-1005&#10;ACE-1032&#10;B-04-2-3"></textarea>`,
+      [{txt:'Cancelar'},{txt:'Agregar a la selección',cls:'pri',fn:host=>{
+        const codigos=host.querySelector('[data-lista]').value.split(/[\n,;]+/)
+          .map(x=>x.trim().toUpperCase()).filter(Boolean);
+        if(!codigos.length){ UI.msg('No se pegó ningún código','err'); return false; }
+        let n=0; const sin=[];
+        codigos.forEach(cod=>{
+          const hit=cand.filter(s=>s.sku.toUpperCase()===cod||s.ub.toUpperCase()===cod);
+          if(!hit.length){ sin.push(cod); return; }
+          hit.forEach(s=>{ if(!sel.has(s.id)){ sel.add(s.id); n++; } });
+        });
+        UI.msg(n+' línea(s) agregadas'+(sin.length?' · '+sin.length+' código(s) sin coincidencia':''),
+          sin.length?'warn':'ok');
+        if(sin.length) console.warn('Sin coincidencia:',sin);
+        ST.nv.render();
+      }}]);
+  };
+  bindEtapas(); UI.bindMas();
+  el('view').querySelector('[data-crear]').onclick=()=>{
+    if(!elegidas.length) return UI.msg('Seleccione al menos una línea','err');
+    const lineas=[...elegidas].sort((a,b)=>U.col.compare(a.ub,b.ub)||U.col.compare(a.sku,b.sku))
+      .map(s=>{ const p=DB.prod(s.sku);
+        return {stockId:s.id,ub:s.ub,sku:s.sku,desc:p.desc,um:p.um,clase:p.clase,costo:p.costo,
+          lote:s.lote,vence:s.vence,teorico:s.teorico,fisico:null,
+          /* costo y tolerancia se congelan aqui */
+          tol:U.tol(p.clase,s.teorico),
+          cerrada:false,decision:'',disc:null};});
+    const c={id:U.id('CT',++DB.seq.conteo),tipo:cab.tipo,
+      zona: zonasSel.length===1?zonasSel[0]:'Mixta', estado:'ABIERTO',
+      criterio: cab.criterio || `Selección manual · ${skus} SKU · zona ${zonasSel.join('/')}`,
+      responsable:cab.resp||CFG.usuario, fechaPlan:cab.fecha, fechaEjec:null, fechaCierre:null, lineas};
+    if(cab.resp && !CFG.responsables.includes(cab.resp)) CFG.responsables.push(cab.resp);
+    DB.conteos.unshift(c);
+    DB.log('Conteos','Crear conteo',`${c.id} · ${lineas.length} línea(s) · ${skus} SKU · ${c.criterio}`);
+    UI.msg('Conteo '+c.id+' creado con '+lineas.length+' línea(s)','ok');
+    sel.clear(); ST.nv.ver='Todo el universo';
+    APP.ir('captura',{id:c.id});
+  };
+};
+
+/* ---------- 5.4 EL INVENTARIO TERMINADO ---------- */
+VIEWS.cierre=(p)=>{
+  const c=DB.conteo(p.id);
+  if(!c){ APP.ir('reportes'); return; }
+  /* Mientras se cuenta no hay nada que revisar: eso es la hoja */
+  if(c.estado!=='CERRADO'){ APP.ir('captura',{id:c.id}); return; }
+  ST.ci??={ver:false};
+  ST.ci.render=()=>VIEWS.cierre(p);
+
+  /* Lo que no exige decision se acepta solo */
+  c.lineas.forEach(l=>{
+    if(!l.cerrada && ['EXACTO','TOLERADO'].includes(DB.estadoLinea(l))){
+      l.cerrada=true;
+      l.decision = DB.dif(l)===0 ? 'Sin diferencia' : 'Dentro de tolerancia';
+    }
+  });
+
+  const misDisc   = DB.discDe(c.id);
+  const discAb    = misDisc.filter(d=>d.estado!=='RESUELTA');
+  const misConf   = c.lineas.filter(l=>l.confirmada);
+
+  /* ================= EL DETALLE DE LO TERMINADO ====================== */
+  {
+    const perdida=misDisc.filter(d=>d.estado==='RESUELTA').reduce((a,d)=>a+(d.perdida||0),0)
+                 +misConf.reduce((a,l)=>a+(DB.valor(l)<0?Math.abs(DB.valor(l)):0),0);
+    el('view').innerHTML=hd('Inventario '+c.id,'Inicio › Resultados › '+ESTATUS(c).k,
+      `<button class="btn" data-volver>Volver</button>
+       <button class="btn" data-reabrir>${ESTATUS(c).accion}</button>`+
+      UI.mas([{txt:'Exportar detalle',fn:()=>ST.ci.exportar()}]))+
+    `<div class="resultado ${ESTATUS(c).cls==='a'?'inv':(ESTATUS(c).cls==='r'?'dis':'')}">
+       <div class="r-ico">${ESTATUS(c).cls==='g'?'&#10003;':'!'}</div>
+       <div class="r-txt">
+         <h2><span class="st ${ESTATUS(c).cls}">${ESTATUS(c).k}</span></h2>
+         <p>Cerrado el ${c.fechaCierre||c.fechaEjec||'—'} - ${U.n(c.lineas.length)} linea(s) contadas -
+            ${U.n(misConf.length)} diferencia(s) confirmadas - ${U.n(discAb.length)} caso(s) sin resolver.</p>
+       </div>
+     </div>
+     <div class="kpis" style="grid-template-columns:repeat(4,1fr)">
+       <div class="kpi"><div class="l">Exactitud del conteo</div><div class="v">${U.p(DB.eri(c.lineas))}</div>
+         <div class="s">${U.n(c.lineas.length)} linea(s)</div></div>
+       <div class="kpi"><div class="l">Diferencias confirmadas</div><div class="v">${U.n(misConf.length)}</div>
+         <div class="s">${U.m(misConf.reduce((a,l)=>a+DB.valor(l),0))} neto</div></div>
+       <div class="kpi"><div class="l">Discrepancias sin resolver</div>
+         <div class="v ${discAb.length?'bad':'ok'}">${U.n(discAb.length)}</div>
+         <div class="s">de ${U.n(misDisc.length)} abiertas en total</div></div>
+       <div class="kpi"><div class="l">Perdida confirmada</div>
+         <div class="v ${perdida?'bad':''}" style="font-size:15px">${U.m(perdida)}</div>
+         <div class="s">faltantes confirmados y casos cerrados</div></div>
+     </div>
+     ${misConf.length?`<div class="panel"><div class="panel-hd">Diferencias confirmadas
+        <span class="sp"><select data-causa-todas><option value="">Poner causa a las que no tienen...</option>${
+          CFG.causas.map(x=>`<option>${U.esc(x)}</option>`).join('')}</select></span></div><div id="ci-c"></div></div>`:''}
+     ${misDisc.length?`<div class="panel"><div class="panel-hd">Discrepancias de este conteo
+        <span class="sp muted">Doble clic para abrir el caso</span></div><div id="ci-d"></div></div>`:''}
+     <div class="inline" style="margin-bottom:8px">
+       <button class="btn-lnk" data-detalle>${ST.ci.ver?'Ocultar':'Ver'} las ${U.n(c.lineas.length)} lineas contadas</button>
+     </div>
+     ${ST.ci.ver?`<div class="panel"><div class="panel-hd">Detalle del conteo</div><div id="ci-res"></div></div>`:''}`;
+
+    if(misConf.length){
+      ST.cic??={sort:'valor',dir:1}; ST.cic.render=()=>VIEWS.cierre(p);
+      UI.tabla(el('ci-c'),{cols:colsDifs(false),rows:misConf.map(l=>filaRes(c,l)),state:ST.cic,
+        vacio:'Sin diferencias.'});
+      bindCausas(el('ci-c'));
+      el('view').querySelector('[data-causa-todas]').onchange=e=>{
+        const cz=e.target.value; if(!cz) return;
+        const ls=misConf.filter(l=>!l.causa);
+        if(!ls.length) return UI.msg('Todas ya tienen causa','warn');
+        ls.forEach(l=>ponerCausa(c,l,cz));
+        UI.msg(ls.length+' linea(s) con causa "'+cz+'"','ok'); ST.ci.render();
+      };
+    }
+    if(misDisc.length){
+      ST.cid??={render:()=>VIEWS.cierre(p)}; ST.cid.per??=10;
+      UI.tabla(el('ci-d'),{cols:colsDisc(),rows:misDisc,state:ST.cid,
+        onRow:d=>APP.ir('discrepancia',{id:d.id})});
+    }
+    if(ST.ci.ver) UI.tabla(el('ci-res'),{state:ST.ci,rows:c.lineas,vacio:'Sin lineas.',cols:[
+      {key:'ub',label:'Ubicación',w:104,cls:()=>'mono'},
+      {key:'sku',label:'SKU',w:96,cls:()=>'mono'},
+      {key:'desc',label:'Descripción'},
+      {key:'lote',label:'Lote',w:96,cls:()=>'mono'},
+      {key:'teorico',label:'Sistema',w:74,a:'r',fmt:l=>U.n(l.teorico)},
+      {key:'fis',label:'Contado',w:74,a:'r',val:l=>DB.fis(l),fmt:l=>U.n(DB.fis(l))},
+      {key:'dif',label:'Dif.',w:66,a:'r',val:l=>DB.dif(l),fmt:l=>UI.num(DB.dif(l))},
+      {key:'valor',label:'Valor',w:112,a:'r',val:l=>DB.valor(l),fmt:l=>U.m(DB.valor(l))},
+      {key:'decision',label:'Qué se hizo',w:190,fmt:l=>U.esc(l.decision||'—')},
+      {key:'est',label:'Resultado',w:110,val:l=>DB.estadoLinea(l),fmt:l=>UI.st(DB.estadoLinea(l))}
+    ]});
+    el('view').querySelector('[data-detalle]').onclick=()=>{ ST.ci.ver=!ST.ci.ver; ST.ci.render(); };
+  }
+
+  /* Comunes */
+  ST.ci.exportar=()=>U.csv('conteo_'+c.id,[
+    {key:'ub',label:'Ubicación'},{key:'sku',label:'SKU'},{key:'desc',label:'Descripción'},
+    {key:'lote',label:'Lote'},{key:'teorico',label:'Sistema'},
+    {key:'fis',label:'Contado',raw:l=>DB.fis(l)??''},{key:'dif',label:'Diferencia',raw:l=>DB.dif(l)},
+    {key:'valor',label:'Valor',raw:l=>DB.valor(l)},{key:'decision',label:'Qué se hizo'},
+    {key:'est',label:'Resultado',raw:l=>DB.estadoLinea(l)}],c.lineas);
+  /* Volver = a la lista donde vive ese inventario ahora mismo, tal como estaba, por si quiere cambiar otra cosa. */
+  el('view').querySelectorAll('[data-volver]').forEach(b=>b.onclick=()=>
+    enConteo(c)?APP.ir('inventario',{etapa:'Contar'}):APP.ir('reportes'));
+  const bra=el('view').querySelector('[data-reabrir]');
+  if(bra) bra.onclick=()=>ACC.volverAConteo(c);
+  UI.bindMas();
+};
+
+/* ---------- 5.5 DISCREPANCIAS: bandeja ---------- */
+const colsDisc=()=>[
+  {key:'id',label:'Caso',w:84},
+  {key:'conteo',label:'Conteo',w:80},
+  {key:'fecha',label:'Detectada',w:88},
+  {key:'dias',label:'Días',w:52,a:'r',val:d=>DB.diasDisc(d),
+    fmt:d=>{const n=DB.diasDisc(d);
+      return `<span class="${d.estado!=='RESUELTA'&&n>7?'neg':''}">${U.n(n)}</span>`;}},
+  {key:'ub',label:'Ubicación',w:100,cls:()=>'mono'},
+  {key:'sku',label:'SKU',w:94,cls:()=>'mono'},
+  {key:'desc',label:'Descripción'},
+  {key:'lote',label:'Lote',w:92,cls:()=>'mono'},
+  {key:'teorico',label:'Sistema',w:70,a:'r',fmt:d=>U.n(d.teorico)},
+  {key:'fisico',label:'Contado',w:70,a:'r',fmt:d=>U.n(d.fisico)},
+  {key:'dif',label:'Dif.',w:60,a:'r',fmt:d=>UI.num(d.dif)},
+  {key:'valor',label:'Valor',w:112,a:'r',fmt:d=>`<span class="${d.valor<0?'neg':'pos'}">${U.m(d.valor)}</span>`},
+  {key:'responsable',label:'Investiga',w:110,fmt:d=>U.esc(d.responsable||'—')},
+  {key:'estado',label:'Estado',w:130,fmt:d=>UI.st(d.estado)}
+];
+
+/* ---------- 5.5b UNA DISCREPANCIA */
+VIEWS.discrepancia=(p)=>{
+  const d=DB.disc(p.id);
+  if(!d){ APP.ir('discrepancias'); return; }
+  ST.dd??={};
+  ST.dd.render=()=>VIEWS.discrepancia(p);
+  const c=DB.conteo(d.conteo);
+  const dias=DB.diasDisc(d);
+  const resuelta=d.estado==='RESUELTA';
+
+  el('view').innerHTML=hd('Caso '+d.id,'Inicio › Resultados › Casos › '+d.estado,
+    (resuelta?'':`<button class="btn" data-inv>Poner en investigacion</button>
+                  <button class="btn pri" data-res>Resolver caso</button>`)+
+    `<button class="btn" data-nota>Agregar nota</button>`)+
+  `<div class="resultado ${resuelta?'fin':''}">
+     <div class="r-ico">${resuelta?'&#10003;':'!'}</div>
+     <div class="r-txt">
+       <h2>${UI.st(d.estado)} ${U.esc(d.sku)} en ${U.esc(d.ub)}</h2>
+       <p>Detectada el ${d.fecha} en el conteo ${d.conteo} - ${U.n(dias)} dia(s)
+          ${resuelta?'hasta el cierre del caso':'sin resolver'}.
+          ${d.responsable?'Investiga '+U.esc(d.responsable)+'.':'Sin responsable asignado.'}</p>
+     </div>
+   </div>
+   <div class="grid2">
+     <div class="panel"><div class="panel-hd">La diferencia</div><div class="panel-bd">
+       <div class="dl">
+         <dt>Articulo</dt><dd>${U.esc(d.sku)} - ${U.esc(d.desc)}</dd>
+         <dt>Ubicacion</dt><dd>${U.esc(d.ub)} - lote ${U.esc(d.lote)}</dd>
+         <dt>Clase ABC</dt><dd>${U.esc(d.clase)}</dd>
+         <dt>Sistema decia</dt><dd>${U.n(d.teorico)}</dd>
+         <dt>Se conto</dt><dd>${U.n(d.fisico)}</dd>
+         <dt>Diferencia</dt><dd>${UI.num(d.dif)} unidad(es)</dd>
+         <dt>Valor</dt><dd class="${d.valor<0?'neg':'pos'}">${U.m(d.valor)}</dd>
+         <dt>Compromiso</dt><dd>${d.compromiso||'—'}</dd>
+       </div>
+     </div></div>
+     <div class="panel"><div class="panel-hd">Como termino</div><div class="panel-bd">
+       ${resuelta?`<div class="dl">
+         <dt>Causa</dt><dd>${U.esc(d.causa||'—')}</dd>
+         <dt>Resuelta el</dt><dd>${d.fechaResuelta||'—'}</dd>
+         <dt>Resuelta por</dt><dd>${U.esc(d.resuelvePor||'—')}</dd>
+         <dt>Que se comprobo</dt><dd>${d.real?'La diferencia era real':'Error de conteo: no habia diferencia'}</dd>
+         <dt>Perdida confirmada</dt><dd class="${d.perdida?'neg':''}">${U.m(d.perdida||0)}</dd>
+       </div>
+       <div class="hr"></div>
+       <div class="muted">Este caso quedo resuelto, pero el conteo ${d.conteo} conserva la senal de
+       discrepancia en el historico: que se explique no quiere decir que no hubo perdida.</div>`
+       :`<div class="muted">El caso sigue abierto. Cuando lo resuelva se registra la causa, si la
+         diferencia era real o fue error de conteo, y cuanta perdida quedo confirmada.</div>`}
+     </div></div>
+   </div>
+   <div class="panel"><div class="panel-hd">Bitacora del caso
+     <span class="sp muted">${U.n((d.notas||[]).length)} anotacion(es)</span></div>
+     <div class="panel-bd">
+       ${(d.notas||[]).length?d.notas.map(n=>`<div class="bit">
+          <div class="b-ts">${n.ts} - ${U.esc(n.usuario)}</div>${U.esc(n.txt)}</div>`).join('')
+        :'<div class="muted">Todavia no hay anotaciones.</div>'}
+     </div>
+   </div>
+   <div class="inline" style="margin-top:6px">
+     <button class="btn-lnk" data-volver>Volver a casos</button>
+     ${c?`<button class="btn-lnk" data-conteo>Ver el conteo ${d.conteo}</button>`:''}
+   </div>`;
+
+  const rec=()=>ST.dd.render();
+  const bi=el('view').querySelector('[data-inv]');
+  if(bi) bi.onclick=()=>ACC.formInvestigar([d],rec);
+  const br=el('view').querySelector('[data-res]');
+  if(br) br.onclick=()=>ACC.formResolver([d],rec);
+  el('view').querySelector('[data-nota]').onclick=()=>ACC.formNota([d],rec);
+  el('view').querySelector('[data-volver]').onclick=()=>APP.ir('discrepancias');
+  const bc=el('view').querySelector('[data-conteo]');
+  if(bc) bc.onclick=()=>APP.ir('cierre',{id:d.conteo});
+};
+
+/* ---------- 5.6 (eliminado) La hoja de reporte para correo y el reporte de cambio de turno se quitaron */
+
+/* ---------- 5.6 RESULTADOS ----------------------------------------------
+   Una sola pantalla: buscador arriba, cuatro numeros y tres pestanas
+   (Inventarios, Diferencias, Casos). Escribir en el buscador reemplaza la pestana
+   por las lineas que coinciden, de todos los inventarios terminados. */
+const TABS_RES=['Inventarios','Diferencias','Casos'];
+ST.res={tab:'Inventarios',per:'Todo',q:'',exp:null};
+const fechaCon=c=>c.fechaCierre||c.fechaEjec||'';
+const enPeriodo=f=>{
+  if(ST.res.per==='Todo') return true;
+  const r=rangoDe(ST.res.per,'',''); return !!f && f>=r.a && f<=r.b;
+};
+const conteosRes=()=>DB.conteos.filter(c=>enReportes(c)&&enPeriodo(fechaCon(c)));
+const lineasRes=()=>conteosRes().flatMap(c=>c.lineas.map(l=>({c,l})));
+/* Una linea contada, lista para mostrar */
+const filaRes=(c,l)=>({conteo:c.id,fecha:fechaCon(c),ub:l.ub,sku:l.sku,desc:l.desc,lote:l.lote,
+  teorico:l.teorico,fisico:DB.fis(l),dif:DB.dif(l),valor:DB.valor(l),est:DB.estadoLinea(l),
+  causa:l.causa||'',conf:!!l.confirmada,stockId:l.stockId,caso:l.disc||'',
+  detalle:l.disc?('Caso '+l.disc):(l.confirmada?(l.causa||'Sin causa'):(l.decision||''))});
+
+/* La causa se escribe aqui, ya con el conteo cerrado: contando no se ve la diferencia */
+const selectCausa=r=>`<select class="cau" data-c="${r.conteo}" data-id="${r.stockId}">
+    <option value="">(sin causa)</option>
+    ${CFG.causas.map(x=>`<option ${r.causa===x?'selected':''}>${U.esc(x)}</option>`).join('')}
+  </select>`;
+const ponerCausa=(c,l,causa)=>{
+  l.causa=causa;
+  if(l.confirmada) l.decision='Diferencia confirmada'+(causa?' - '+causa:' - sin causa declarada');
+  DB.log('Conteos','Causa de diferencia',`${c.id} - ${l.sku} - ${causa||'sin causa'}`);
+  DB.guardar();
+};
+const bindCausas=host=>host.addEventListener('change',e=>{
+  const t=e.target; if(!(t.classList&&t.classList.contains('cau'))) return;
+  const c=DB.conteo(t.dataset.c), l=c&&c.lineas.find(x=>x.stockId==t.dataset.id);
+  if(l) ponerCausa(c,l,t.value);
+});
+const colsLineas=()=>[
+  {key:'conteo',label:'Inventario',w:84},
+  {key:'fecha',label:'Fecha',w:92},
+  {key:'ub',label:'Ubicación',w:100,cls:()=>'mono'},
+  {key:'sku',label:'SKU',w:94,cls:()=>'mono'},
+  {key:'desc',label:'Descripción'},
+  {key:'lote',label:'Lote',w:92,cls:()=>'mono'},
+  {key:'teorico',label:'Sistema',w:70,a:'r',fmt:r=>U.n(r.teorico)},
+  {key:'fisico',label:'Contado',w:70,a:'r',fmt:r=>r.fisico==null?'<span class="muted">—</span>':U.n(r.fisico)},
+  {key:'dif',label:'Dif.',w:60,a:'r',fmt:r=>UI.num(r.dif)},
+  {key:'valor',label:'Valor',w:110,a:'r',fmt:r=>U.m(r.valor)},
+  {key:'est',label:'Resultado',w:104,fmt:r=>UI.st(r.est)},
+  {key:'detalle',label:'Qué pasó',w:190,fmt:r=>U.esc(r.detalle)}
+];
+const colsDifs=(conInv)=>(conInv?[{key:'conteo',label:'Inventario',w:84}]:[]).concat([
+  {key:'ub',label:'Ubicación',w:100,cls:()=>'mono'},
+  {key:'sku',label:'SKU',w:94,cls:()=>'mono'},
+  {key:'desc',label:'Descripción'},
+  {key:'lote',label:'Lote',w:92,cls:()=>'mono'},
+  {key:'teorico',label:'Sistema',w:70,a:'r',fmt:r=>U.n(r.teorico)},
+  {key:'fisico',label:'Contado',w:70,a:'r',fmt:r=>U.n(r.fisico)},
+  {key:'dif',label:'Dif.',w:60,a:'r',fmt:r=>UI.num(r.dif)},
+  {key:'valor',label:'Valor',w:110,a:'r',fmt:r=>`<span class="${r.valor<0?'neg':'pos'}">${U.m(r.valor)}</span>`},
+  {key:'causa',label:'Causa',w:210,val:r=>r.causa,
+    fmt:r=>r.conf?selectCausa(r):(r.caso?`<span class="muted">En el caso ${U.esc(r.caso)}</span>`:'<span class="muted">—</span>')}
+]);
+
+const resKpis=()=>{
+  const cs=conteosRes(), todas=cs.flatMap(c=>c.lineas);
+  const eri=DB.eri(todas);
+  const difs=todas.filter(l=>DB.estadoLinea(l)==='DIFERENCIA');
+  const neto=difs.reduce((a,l)=>a+DB.valor(l),0);
+  const ab=DB.discrepancias.filter(d=>d.estado!=='RESUELTA'&&enPeriodo(d.fecha));
+  const vieja=ab.length?Math.max(...ab.map(d=>DB.diasDisc(d))):0;
+  return `<div class="kpis" style="grid-template-columns:repeat(4,1fr)">
+     <div class="kpi"><div class="l">Exactitud</div>
+       <div class="v ${eri==null?'':(eri>=CFG.metaExactitud?'ok':'bad')}">${U.p(eri)}</div>
+       <div class="s">${U.n(cs.length)} inventario(s) - meta ${U.p(CFG.metaExactitud)}</div></div>
+     <div class="kpi"><div class="l">Lineas con diferencia</div>
+       <div class="v ${difs.length?'bad':'ok'}">${U.n(difs.length)}</div>
+       <div class="s">de ${U.n(todas.length)} contadas</div></div>
+     <div class="kpi"><div class="l">Valor de las diferencias</div>
+       <div class="v ${neto<0?'bad':''}" style="font-size:15px">${U.m(neto)}</div>
+       <div class="s">sobrantes menos faltantes</div></div>
+     <div class="kpi"><div class="l">Casos abiertos</div>
+       <div class="v ${ab.length?'bad':'ok'}">${U.n(ab.length)}</div>
+       <div class="s">${ab.length?'el mas viejo: '+U.n(vieja)+' d':'nada pendiente'}</div></div>
+   </div>`;
+};
+
+/* --- Pestana Inventarios --- */
+const resInventarios=()=>{
+  ST.rbn??={f:{est:'',zona:''},sort:'fechaCierre',dir:-1};
+  ST.rbn.render=pintarRes;
+  const f=ST.rbn.f;
+  el('res-body').innerHTML=`<div class="panel">
+     <div class="filters">
+       <div class="f"><label>Estatus</label><select data-es>${opts(['',EST_OK,EST_DIF,EST_INC],f.est)}</select></div>
+       <div class="f"><label>Zona</label><select data-z>${opts([''].concat(CFG.zonas).concat('Mixta'),f.zona)}</select></div>
+       <div class="f"><label>&nbsp;</label><button class="btn" data-limpiar>Limpiar filtros</button></div>
+     </div>
+     <div id="bn-t"></div>
+   </div>
+   <div class="muted" style="margin-top:6px">Nada se queda trancado: lo cerrado se reabre y lo que
+   quedo a medias se reinicia y vuelve al conteo donde se quedo. Lo que ya no sirva, se elimina.</div>`;
+  const rows=conteosRes().filter(c=>(!f.est||ESTATUS(c).k===f.est)&&(!f.zona||c.zona===f.zona));
+  const dif=c=>c.lineas.filter(l=>l.confirmada).reduce((a,l)=>a+DB.valor(l),0);
+  const cols=[
+    {key:'id',label:'Inventario',w:88},
+    {key:'fechaCierre',label:'Cerrado',w:92,fmt:c=>c.fechaCierre||'<span class="muted">—</span>'},
+    {key:'zona',label:'Zona',w:52,a:'c'},
+    {key:'responsable',label:'Responsable',w:104},
+    {key:'lin',label:'Líneas',w:58,a:'r',val:c=>c.lineas.length,fmt:c=>U.n(c.lineas.length)},
+    {key:'eri',label:'Exactitud',w:80,a:'r',val:c=>DB.eri(c.lineas)||0,fmt:c=>U.p(DB.eri(c.lineas))},
+    {key:'val',label:'Diferencia',w:112,a:'r',val:dif,
+      fmt:c=>{const v=dif(c); return `<span class="${v<0?'neg':(v>0?'pos':'muted')}">${U.m(v)}</span>`;}},
+    {key:'motivo',label:'Motivo',w:170,val:c=>MOTIVO_TXT(c),
+      fmt:c=>{ const m=MOTIVOS(c);
+        if(!m.length) return '';
+        const resto=m.length>1?` <span class="muted">+${m.length-1}</span>`:'';
+        return `<span title="${U.esc(MOTIVO_TXT(c))}">${U.esc(m[0].k)}`+
+               `<span class="muted"> (${U.n(m[0].n)})</span>${resto}</span>`; }},
+    {key:'est',label:'Estatus',w:190,val:c=>ESTATUS(c).k,
+      fmt:c=>{const e=ESTATUS(c);
+        return `<span class="st ${e.cls}">${e.k}</span>`+
+          (e.nota?`<div class="muted" style="font-size:var(--fs3)">${e.nota}</div>`:'');}},
+    {key:'acc',label:'',w:230,sort:false,a:'c',
+      fmt:c=>{const e=ESTATUS(c);
+        return `<button class="btn xs pri" data-abrir="${c.id}">Ver</button>
+                <button class="btn xs" data-vol="${c.id}">${e.accion}</button>
+                <button class="btn xs dan" data-del="${c.id}">Eliminar</button>`;}}
+  ];
+  UI.tabla(el('bn-t'),{cols,rows,state:ST.rbn,onRow:c=>APP.ir('cierre',{id:c.id}),
+    vacio:'Todavia no hay inventarios terminados en este periodo.'});
+  bindFiltros(ST.rbn,{'[data-es]':'est','[data-z]':'zona'});
+  el('view').querySelectorAll('[data-abrir]').forEach(b=>b.onclick=()=>APP.ir('cierre',{id:b.dataset.abrir}));
+  el('view').querySelectorAll('[data-vol]').forEach(b=>b.onclick=()=>ACC.volverAConteo(DB.conteo(b.dataset.vol)));
+  el('view').querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>ACC.eliminarReporte(DB.conteo(b.dataset.del)));
+  ST.res.exp=()=>U.csv('inventarios_terminados',[
+    {key:'id',label:'Inventario'},{key:'fechaCierre',label:'Cerrado'},{key:'zona',label:'Zona'},
+    {key:'responsable',label:'Responsable'},{key:'lin',label:'Líneas',raw:c=>c.lineas.length},
+    {key:'eri',label:'Exactitud',raw:c=>(DB.eri(c.lineas)||0).toFixed(2)},
+    {key:'motivo',label:'Motivo',raw:c=>MOTIVO_TXT(c)},
+    {key:'val',label:'Diferencia',raw:dif},
+    {key:'est',label:'Estatus',raw:c=>ESTATUS(c).k}],rows);
+};
+
+/* --- Pestana Diferencias: todas las lineas que no cuadraron, con su causa --- */
+const resDiferencias=()=>{
+  ST.rdf??={f:{causa:''},sort:'valor',dir:1};
+  ST.rdf.render=pintarRes;
+  const f=ST.rdf.f;
+  const rows=lineasRes().filter(({l})=>DB.estadoLinea(l)==='DIFERENCIA').map(({c,l})=>filaRes(c,l))
+    .filter(r=>!f.causa||(f.causa==='(sin causa)'?!r.causa:r.causa===f.causa));
+  el('res-body').innerHTML=`<div class="panel">
+     <div class="filters">
+       <div class="f"><label>Causa</label><select data-ca>${opts(['','(sin causa)'].concat(CFG.causas),f.causa)}</select></div>
+       <div class="f"><label>&nbsp;</label><button class="btn" data-limpiar>Limpiar filtros</button></div>
+     </div>
+     <div id="df-t"></div>
+   </div>`;
+  const cols=colsDifs(true);
+  UI.tabla(el('df-t'),{cols,rows,state:ST.rdf,onRow:r=>APP.ir('cierre',{id:r.conteo}),
+    vacio:'No hay diferencias en este periodo.'});
+  bindCausas(el('df-t'));
+  bindFiltros(ST.rdf,{'[data-ca]':'causa'});
+  ST.res.exp=()=>U.csv('diferencias',[
+    {key:'conteo',label:'Inventario'},{key:'ub',label:'Ubicación'},{key:'sku',label:'SKU'},
+    {key:'desc',label:'Descripción'},{key:'lote',label:'Lote'},{key:'teorico',label:'Sistema'},
+    {key:'fisico',label:'Contado'},{key:'dif',label:'Diferencia'},{key:'valor',label:'Valor'},
+    {key:'causa',label:'Causa'},{key:'detalle',label:'Detalle'}],rows);
+};
+
+/* --- Pestana Casos: las investigaciones --- */
+const resCasos=()=>{
+  ST.dl??={f:{estado:'',zona:'',resp:'',min:''},sel:new Set()};
+  ST.dl.render=pintarRes;
+  const f=ST.dl.f, sel=ST.dl.sel;
+  el('res-body').innerHTML=`<div class="panel">
+     <div class="filters">
+       <div class="f"><label>Estado</label><select data-e>${opts(['','ABIERTA','EN INVESTIGACION','RESUELTA'],f.estado)}</select></div>
+       <div class="f"><label>Zona</label><select data-z>${opts([''].concat(CFG.zonas),f.zona)}</select></div>
+       <div class="f"><label>Investiga</label><select data-r>${opts([''].concat(CFG.responsables),f.resp)}</select></div>
+       <div class="f"><label>Valor mínimo</label><input type="number" data-min value="${f.min}" placeholder="0" style="width:110px"></div>
+       <div class="f"><label>&nbsp;</label><button class="btn" data-limpiar>Limpiar filtros</button></div>
+     </div>
+     ${sel.size?`<div class="cinta">
+       <span class="cnt">${U.n(sel.size)} marcado(s)</span>
+       <span class="sp">
+         <button class="btn" data-b-inv>Poner en investigacion</button>
+         <button class="btn pri" data-b-res>Resolver</button>
+         <button class="btn-lnk" data-b-nada>Quitar marca</button>
+       </span></div>`:''}
+     <div id="dl-t"></div>
+   </div>`;
+  const rows=DB.discrepancias.filter(d=>
+    enPeriodo(d.fecha)&&
+    (!f.estado||d.estado===f.estado)&&
+    (!f.zona||U.zonaDe(d.ub)===f.zona)&&
+    (!f.resp||d.responsable===f.resp)&&
+    (!f.min||Math.abs(d.valor)>=+f.min));
+  const cols=[{key:'sel',label:'',w:26,a:'c',sort:false,
+      fmt:d=>`<input type="checkbox" data-sel="${d.id}" ${sel.has(d.id)?'checked':''}>`}]
+    .concat(colsDisc());
+  UI.tabla(el('dl-t'),{cols,rows,state:ST.dl,onRow:d=>APP.ir('discrepancia',{id:d.id}),
+    vacio:'No hay casos con estos filtros.'});
+  bindFiltros(ST.dl,{'[data-e]':'estado','[data-z]':'zona','[data-r]':'resp','[data-min]':'min'});
+  el('view').querySelectorAll('[data-sel]').forEach(ch=>ch.onchange=()=>{
+    ch.checked?sel.add(ch.dataset.sel):sel.delete(ch.dataset.sel);
+    ch.closest('tr').classList.toggle('sel',ch.checked);
+    if(sel.size<2) ST.dl.render();   /* aparece o desaparece la cinta */
+  });
+  const marcadas=()=>DB.discrepancias.filter(d=>sel.has(d.id)&&d.estado!=='RESUELTA');
+  const bi=el('view').querySelector('[data-b-inv]');
+  if(bi){
+    bi.onclick=()=>{
+      const ls=marcadas();
+      if(!ls.length) return UI.msg('Los marcados ya estan resueltos','warn');
+      ACC.formInvestigar(ls,()=>{ sel.clear(); ST.dl.render(); });
+    };
+    el('view').querySelector('[data-b-res]').onclick=()=>{
+      const ls=marcadas();
+      if(!ls.length) return UI.msg('Los marcados ya estan resueltos','warn');
+      ACC.formResolver(ls,()=>{ sel.clear(); ST.dl.render(); });
+    };
+    el('view').querySelector('[data-b-nada]').onclick=()=>{ sel.clear(); ST.dl.render(); };
+  }
+  ST.res.exp=()=>U.csv('casos',[
+    {key:'id',label:'Caso'},{key:'conteo',label:'Inventario'},{key:'fecha',label:'Detectada'},
+    {key:'dias',label:'Días',raw:d=>DB.diasDisc(d)},
+    {key:'ub',label:'Ubicación'},{key:'sku',label:'SKU'},{key:'desc',label:'Descripción'},
+    {key:'lote',label:'Lote'},{key:'teorico',label:'Sistema'},{key:'fisico',label:'Contado'},
+    {key:'dif',label:'Diferencia'},{key:'valor',label:'Valor'},
+    {key:'responsable',label:'Investiga'},{key:'estado',label:'Estado'},
+    {key:'causa',label:'Causa'},{key:'real',label:'Diferencia real',raw:d=>d.real?'SI':'NO'},
+    {key:'perdida',label:'Pérdida confirmada'},{key:'fechaResuelta',label:'Resuelta el'}],rows);
+};
+
+/* --- Buscador: una linea, de todos los inventarios terminados --- */
+const resBusqueda=()=>{
+  const q=ST.res.q.trim().toLowerCase();
+  ST.rbq??={sort:'fecha',dir:-1};
+  ST.rbq.render=pintarRes;
+  const rows=[];
+  /* Solo inventarios terminados: un conteo abierto sigue siendo ciego */
+  DB.conteos.filter(enReportes).forEach(c=>c.lineas.forEach(l=>{
+    const r=filaRes(c,l);
+    if((r.conteo+' '+r.ub+' '+r.sku+' '+r.desc+' '+r.lote+' '+r.caso).toLowerCase().includes(q)) rows.push(r);
+  }));
+  const dif=rows.filter(r=>r.est==='DIFERENCIA').length;
+  const stock=DB.stock.filter(s=>{ const p=DB.prod(s.sku)||{};
+    return (s.ub+' '+s.sku+' '+(p.desc||'')+' '+s.lote).toLowerCase().includes(q); });
+  const unid=stock.reduce((a,s)=>a+s.teorico,0);
+  el('res-body').innerHTML=`<div class="panel">
+     <div class="panel-bd"><b>${U.n(rows.length)}</b> linea(s) contadas en
+       <b>${U.n(new Set(rows.map(r=>r.conteo)).size)}</b> inventario(s),
+       <b class="${dif?'neg':''}">${U.n(dif)}</b> con diferencia.
+       En el sistema hoy: ${U.n(stock.length)} linea(s) de existencia, ${U.n(unid)} unidad(es).</div>
+     <div id="rb-t"></div></div>`;
+  UI.tabla(el('rb-t'),{cols:colsLineas(),rows,state:ST.rbq,onRow:r=>APP.ir('cierre',{id:r.conteo}),
+    vacio:'Nada coincide con esa busqueda en los inventarios terminados.'});
+  ST.res.exp=()=>U.csv('busqueda',colsLineas().map(c=>({key:c.key,label:c.label})),rows);
+};
+
+const pintarRes=()=>{
+  if(!el('res-body')) return;
+  const S=ST.res;
+  el('view').querySelectorAll('[data-rtab]').forEach(b=>
+    b.classList.toggle('pri',!S.q.trim()&&S.tab===b.dataset.rtab));
+  if(S.q.trim()) return resBusqueda();
+  ({Inventarios:resInventarios,Diferencias:resDiferencias,Casos:resCasos})[S.tab]();
+  UI.bindMas();
+};
+
+VIEWS.reportes=(p)=>{
+  const S=ST.res;
+  if(p&&p.tab&&TABS_RES.includes(p.tab)){ S.tab=p.tab; S.q=''; }
+  const nInv=conteosRes().length;
+  const nDif=lineasRes().filter(({l})=>DB.estadoLinea(l)==='DIFERENCIA').length;
+  const nCasos=DB.discrepancias.filter(d=>d.estado!=='RESUELTA').length;
+  const cuenta={Inventarios:nInv,Diferencias:nDif,Casos:nCasos};
+  el('view').innerHTML=hd('Resultados','Inicio › Resultados',
+      UI.mas([{txt:'Exportar esta lista',fn:()=>S.exp&&S.exp()}]))+
+    `<div class="sheet-bar">
+       <div class="sb-item" style="flex:1"><span class="l">Buscar</span>
+         <input type="text" data-rq value="${U.esc(S.q)}" style="width:100%"
+           placeholder="SKU, ubicacion, lote, descripcion o inventario"></div>
+       <div class="sb-item"><span class="l">Periodo</span>
+         <select data-rper>${opts(PERIODOS.filter(x=>x!=='Rango'),S.per)}</select></div>
+     </div>`+resKpis()+
+    `<div class="inline" style="margin-bottom:8px">${TABS_RES.map(t=>
+       `<button class="btn" data-rtab="${t}">${t} (${U.n(cuenta[t])})</button>`).join('')}</div>
+     <div id="res-body"></div>`;
+  const rq=el('view').querySelector('[data-rq]');
+  let deb;
+  rq.oninput=()=>{ clearTimeout(deb); deb=setTimeout(()=>{ S.q=rq.value; pintarRes(); },260); };
+  el('view').querySelector('[data-rper]').onchange=e=>{ S.per=e.target.value; VIEWS.reportes(); };
+  el('view').querySelectorAll('[data-rtab]').forEach(b=>b.onclick=()=>{
+    S.tab=b.dataset.rtab; S.q=''; VIEWS.reportes(); });
+  UI.bindMas(); pintarRes();
+};
+/* Las rutas viejas caen en la pestana que les toca */
+VIEWS.bandeja=()=>VIEWS.reportes({tab:'Inventarios'});
+VIEWS.discrepancias=()=>VIEWS.reportes({tab:'Casos'});
+
+/* ---------- 5.7 PERIODOS ---------- */
+const PERIODOS=['Todo','Hoy','Ayer','Esta semana','Ultimos 7 dias','Este mes',
+                'Mes pasado','Ultimos 30 dias','Rango'];
+/* Fechas en local, sin pasar por UTC: toISOString corre el dia */
+const isoDe=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+
+               String(d.getDate()).padStart(2,'0');
+const rangoDe=(per,d1,d2)=>{
+  const hoy=U.hoy(), d=new Date(hoy+'T00:00:00');
+  const menos=n=>{ const y=new Date(d); y.setDate(y.getDate()-n); return isoDe(y); };
+  switch(per){
+    case 'Hoy':             return {a:hoy,b:hoy};
+    case 'Ayer':            return {a:menos(1),b:menos(1)};
+    case 'Esta semana':     return {a:menos((d.getDay()+6)%7),b:hoy};   /* arranca lunes */
+    case 'Ultimos 7 dias':  return {a:menos(6),b:hoy};
+    case 'Este mes':        return {a:hoy.slice(0,8)+'01',b:hoy};
+    case 'Mes pasado':      return {a:isoDe(new Date(d.getFullYear(),d.getMonth()-1,1)),
+                                    b:isoDe(new Date(d.getFullYear(),d.getMonth(),0))};
+    case 'Ultimos 30 dias': return {a:menos(29),b:hoy};
+    case 'Rango':           return {a:d1||'0000-01-01',b:d2||hoy};
+    default:                return {a:'0000-01-01',b:'9999-12-31'};
+  }
+};
+
+/* Motivo del inventario */
+const MOTIVOS=c=>{
+  const g={};
+  (c.lineas||[]).filter(l=>l.confirmada&&l.causa).forEach(l=>{
+    (g[l.causa]??={n:0,v:0}); g[l.causa].n++; g[l.causa].v+=Math.abs(DB.valor(l)); });
+  DB.discDe(c.id).filter(d=>d.causa).forEach(d=>{
+    (g[d.causa]??={n:0,v:0}); g[d.causa].n++; g[d.causa].v+=Math.abs(d.valor||0); });
+  return Object.keys(g).map(k=>({k,n:g[k].n,v:g[k].v})).sort((a,b)=>b.v-a.v||b.n-a.n);
+};
+const MOTIVO_TXT=c=>{ const m=MOTIVOS(c); return m.length? m.map(x=>x.k+' ('+x.n+')').join(' · ') : ''; };
+
+/* ---------- 5.9b ARTÍCULOS Y EXISTENCIAS ------------------------------- Alta y mantenimiento manual de los maestros, sin depender del CSV. */
+VIEWS.maestros=()=>{
+  ST.ma??={render:VIEWS.maestros,tab:'Artículos',f:{q:''}};
+  const t=ST.ma.tab, f=ST.ma.f;
+  const q=(f.q||'').toLowerCase();
+  const nuevo={'Artículos':'Nuevo artículo','Ubicaciones':'Nueva ubicación','Existencias':'Nueva entrada'}[t];
+
+  el('view').innerHTML=hd('Artículos y existencias','Inicio › Configuración › Maestros',
+    `<button class="btn" data-volver>Volver</button>
+     <button class="btn pri" data-nuevo>${nuevo}</button>`+
+     UI.mas([{txt:'Exportar '+t.toLowerCase(),fn:()=>ST.ma.exportar()},
+             {txt:'Cargar existencias desde Excel',fn:()=>APP.ir('configuracion',{foco:'cargar'})}]))+
+  `<div class="panel">
+     <div class="filters">
+       <div class="f"><label>Ver</label>
+         <span class="inline">${['Artículos','Ubicaciones','Existencias'].map(x=>
+           `<button class="btn ${t===x?'pri':''}" data-tab="${x}">${x} (${U.n(
+             x==='Artículos'?DB.productos.length:(x==='Ubicaciones'?DB.ubicaciones.length:DB.stock.length))})</button>`).join('')}
+         </span></div>
+       <div class="f"><label>Buscar</label>
+         <input type="text" data-q value="${U.esc(f.q)}" placeholder="Código, descripción, ubicación o lote"></div>
+     </div>
+     <div id="ma-t"></div>
+   </div>`;
+
+  /* --- Artículos ------------------------------------------------------ */
+  if(t==='Artículos'){
+    const existDe=sku=>DB.stock.filter(s=>s.sku===sku);
+    const rows=DB.productos.filter(p=>!q||(p.sku+' '+p.desc+' '+p.familia).toLowerCase().includes(q));
+    const cols=[
+      {key:'sku',label:'SKU',w:110,cls:()=>'mono'},
+      {key:'desc',label:'Descripción'},
+      {key:'familia',label:'Familia',w:120},
+      {key:'um',label:'UM',w:52,a:'c'},
+      {key:'clase',label:'ABC',w:46,a:'c'},
+      {key:'costo',label:'Costo unitario',w:120,a:'r',fmt:p=>U.m(p.costo)},
+      {key:'lineas',label:'Existencias',w:90,a:'r',val:p=>existDe(p.sku).length,
+        fmt:p=>U.n(existDe(p.sku).length)},
+      {key:'cant',label:'Cantidad',w:90,a:'r',val:p=>existDe(p.sku).reduce((a,s)=>a+s.teorico,0),
+        fmt:p=>U.n(existDe(p.sku).reduce((a,s)=>a+s.teorico,0))},
+      {key:'valor',label:'Valor',w:120,a:'r',val:p=>existDe(p.sku).reduce((a,s)=>a+s.teorico,0)*p.costo,
+        fmt:p=>U.m(existDe(p.sku).reduce((a,s)=>a+s.teorico,0)*p.costo)},
+      {key:'acc',label:'',w:126,sort:false,a:'c',
+        fmt:p=>`<button class="btn xs" data-edit="${p.sku}">Editar</button>
+                <button class="btn xs" data-entrada="${p.sku}">Entrada</button>`}
+    ];
+    UI.tabla(el('ma-t'),{cols,rows,state:ST.ma,vacio:'Sin artículos. Use "Nuevo artículo" para crear el primero.',
+      onRow:p=>ACC.formArticulo(p)});
+    ST.ma.exportar=()=>U.csv('articulos',cols.slice(0,-1),rows);
+    el('view').querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>
+      ACC.formArticulo(DB.prod(b.dataset.edit)));
+    el('view').querySelectorAll('[data-entrada]').forEach(b=>b.onclick=()=>
+      ACC.formEntrada({sku:b.dataset.entrada}));
+  }
+
+  /* --- Ubicaciones ---------------------------------------------------- */
+  if(t==='Ubicaciones'){
+    const lineasDe=cod=>DB.stock.filter(s=>s.ub===cod);
+    const rows=DB.ubicaciones.filter(u=>!q||(u.cod+' '+u.zona+' '+u.tipo).toLowerCase().includes(q));
+    const cols=[
+      {key:'cod',label:'Ubicación',w:120,cls:()=>'mono'},
+      {key:'zona',label:'Zona',w:60,a:'c'},
+      {key:'tipo',label:'Tipo',w:70},
+      {key:'pasillo',label:'Pasillo',w:70,a:'r',fmt:u=>u.pasillo||'—'},
+      {key:'rack',label:'Rack',w:60,a:'r',fmt:u=>u.rack||'—'},
+      {key:'nivel',label:'Nivel',w:60,a:'r',fmt:u=>u.nivel||'—'},
+      {key:'cap',label:'Capacidad',w:90,a:'r',fmt:u=>u.cap?U.n(u.cap):'—'},
+      {key:'ocup',label:'Líneas',w:70,a:'r',val:u=>lineasDe(u.cod).length,fmt:u=>U.n(lineasDe(u.cod).length)},
+      {key:'cant',label:'Cantidad',w:90,a:'r',val:u=>lineasDe(u.cod).reduce((a,s)=>a+s.teorico,0),
+        fmt:u=>U.n(lineasDe(u.cod).reduce((a,s)=>a+s.teorico,0))},
+      {key:'acc',label:'',w:126,sort:false,a:'c',
+        fmt:u=>`<button class="btn xs" data-edit="${u.cod}">Editar</button>
+                <button class="btn xs" data-entrada="${u.cod}">Entrada</button>`}
+    ];
+    UI.tabla(el('ma-t'),{cols,rows,state:ST.ma,vacio:'Sin ubicaciones registradas.',
+      onRow:u=>ACC.formUbicacion(u)});
+    ST.ma.exportar=()=>U.csv('ubicaciones',cols.slice(0,-1),rows);
+    el('view').querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>
+      ACC.formUbicacion(DB.ubicaciones.find(u=>u.cod===b.dataset.edit)));
+    el('view').querySelectorAll('[data-entrada]').forEach(b=>b.onclick=()=>
+      ACC.formEntrada({ub:b.dataset.entrada}));
+  }
+
+  /* --- Existencias ---------------------------------------------------- */
+  if(t==='Existencias'){
+    const rows=DB.stock.filter(s=>!q||
+      (s.ub+' '+s.sku+' '+s.lote+' '+DB.prod(s.sku).desc).toLowerCase().includes(q));
+    const cols=[
+      {key:'ub',label:'Ubicación',w:110,cls:()=>'mono'},
+      {key:'tipo',label:'Tipo',w:60},
+      {key:'sku',label:'SKU',w:104,cls:()=>'mono'},
+      {key:'desc',label:'Descripción',val:s=>DB.prod(s.sku).desc,fmt:s=>U.esc(DB.prod(s.sku).desc)},
+      {key:'lote',label:'Lote',w:104,cls:()=>'mono'},
+      {key:'vence',label:'Vence',w:88,cls:s=>s.vence&&s.vence<U.hoy()?'neg':'',fmt:s=>s.vence||'—'},
+      {key:'teorico',label:'Cantidad',w:88,a:'r',fmt:s=>U.n(s.teorico)},
+      {key:'valor',label:'Valor',w:118,a:'r',val:s=>s.teorico*DB.prod(s.sku).costo,
+        fmt:s=>U.m(s.teorico*DB.prod(s.sku).costo)},
+      {key:'ultConteo',label:'Último conteo',w:104},
+      {key:'acc',label:'',w:186,sort:false,a:'c',
+        fmt:s=>`<button class="btn xs" data-mov="${s.id}">Entrada / salida</button>
+                <button class="btn xs" data-edit="${s.id}">Editar</button>
+                <button class="btn xs dan" data-del="${s.id}">Eliminar</button>`}
+    ];
+    UI.tabla(el('ma-t'),{cols,rows,state:ST.ma,
+      vacio:'Sin existencias. Use "Nueva entrada" para registrar la primera.'});
+    ST.ma.exportar=()=>U.csv('existencias',cols.slice(0,-1),rows);
+    el('view').querySelectorAll('[data-mov]').forEach(b=>b.onclick=()=>{
+      const s=DB.stock.find(x=>x.id==b.dataset.mov);
+      ACC.formEntrada({ub:s.ub,sku:s.sku,lote:s.lote,vence:s.vence});
+    });
+    el('view').querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>
+      ACC.formExistencia(DB.stock.find(x=>x.id==b.dataset.edit)));
+    el('view').querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>
+      ACC.borrarExistencia(DB.stock.find(x=>x.id==b.dataset.del)));
+  }
+
+  bindFiltros(ST.ma,{'[data-q]':'q'});
+  el('view').querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{
+    ST.ma.tab=b.dataset.tab; ST.ma.pag=1; ST.ma.sort=null; ST.ma.render();
+  });
+  el('view').querySelector('[data-volver]').onclick=()=>APP.ir('configuracion');
+  el('view').querySelector('[data-nuevo]').onclick=()=>{
+    if(t==='Artículos')   return ACC.formArticulo();
+    if(t==='Ubicaciones') return ACC.formUbicacion();
+    ACC.formEntrada();
+  };
+  UI.bindMas();
+};
+
+/* ---------- 5.9 CONFIGURACIÓN ------------------------------------------ */
+VIEWS.configuracion=(p)=>{
+  el('view').innerHTML=hd('Configuración','Inicio › Configuración',
+    `<button class="btn" data-hist>Historial</button>
+     <button class="btn" data-rest>Restaurar valores</button>
+     <button class="btn pri" data-save>Guardar cambios</button>`)+
+  `<div class="grid2">
+    <div class="panel"><div class="panel-hd">Organización</div><div class="panel-bd">
+      <fieldset><legend>Datos del centro</legend><div class="form-grid">
+        <label class="lb">Empresa</label><input type="text" data-c="empresa" value="${U.esc(CFG.empresa)}">
+        <label class="lb">Moneda</label><input type="text" data-c="moneda" value="${U.esc(CFG.moneda)}">
+      </div>
+      <div class="hint">El centro, el usuario y el rol se cambian con un clic arriba, en el encabezado.</div></fieldset>
+      <fieldset><legend>Meta</legend><div class="form-grid">
+        <label class="lb">Meta de exactitud (%)</label><input type="number" step="0.01" data-c="metaExactitud" value="${CFG.metaExactitud}">
+      </div></fieldset>
+    </div></div>
+    <div class="panel"><div class="panel-hd">Reglas de inventario</div><div class="panel-bd">
+      <fieldset><legend>Tolerancia por clase ABC</legend>
+        <table class="t"><thead><tr><th>Clase</th><th class="r">Tolerancia %</th><th class="r">Mínimo (unid.)</th><th class="r">Frecuencia (días)</th></tr></thead><tbody>
+        ${['A','B','C'].map(k=>`<tr><td class="b">${k}</td>
+          <td class="r"><input class="qty-in" type="number" step="0.01" data-tol="${k}.pct" value="${CFG.tolerancia[k].pct}"></td>
+          <td class="r"><input class="qty-in" type="number" step="1" data-tol="${k}.min" value="${CFG.tolerancia[k].min}"></td>
+          <td class="r"><input class="qty-in" type="number" step="1" data-frec="${k}" value="${CFG.frecuencia[k]}"></td></tr>`).join('')}
+        </tbody></table>
+        <div class="muted" style="margin-top:4px">Una línea se considera correcta si la diferencia no supera el mayor entre el porcentaje y el mínimo en unidades.</div>
+      </fieldset>
+      <fieldset><legend>Que pasa al terminar un inventario</legend>
+        <div class="muted">Al pulsar Terminar hay dos salidas, y se deciden para el inventario
+        completo, no linea por linea:</div>
+        <div class="dl" style="margin-top:6px">
+          <dt>Cerrar</dt><dd>El conteo es real y vale. Las diferencias quedan confirmadas.</dd>
+          <dt>Enviar a investigacion</dt><dd>Cada diferencia abre un caso con responsable y bitacora.</dd>
+          <dt>Volver a contar</dt><dd>No se hace linea por linea: se reabre o se reinicia el
+          inventario completo desde Resultados, que es donde vive el estatus.</dd>
+        </div>
+        <div class="hr"></div>
+        <div class="muted">Los estatus del inventario:
+        <span class="st g">CUADRÓ</span> se conto todo y cuadro &middot;
+        <span class="st r">CON DIFERENCIAS</span> hubo diferencia real: confirmada o en investigacion &middot;
+        <span class="st n">INCOMPLETO</span> cuadro lo contado, pero quedaron lineas sin contar.
+        Una linea que nadie conto no suma como acierto: queda fuera de la exactitud.
+        En ningun caso se toca la existencia del sistema.</div>
+      </fieldset>
+    </div></div>
+  </div>
+  <div class="grid3">
+    <div class="panel"><div class="panel-hd">Causas</div><div class="panel-bd">
+      <textarea rows="8" style="width:100%" data-l="causas">${U.esc(CFG.causas.join('\n'))}</textarea>
+      <div class="muted">Una causa por linea. Se usan al ajustar y al resolver un caso.</div></div></div>
+    <div class="panel"><div class="panel-hd">Zonas y tipos de conteo</div><div class="panel-bd">
+      <div class="form-grid"><label class="lb">Zonas</label><input type="text" data-l="zonas" value="${U.esc(CFG.zonas.join(', '))}"></div>
+      <div class="hr"></div>
+      <textarea rows="5" style="width:100%" data-l="tiposConteo">${U.esc(CFG.tiposConteo.join('\n'))}</textarea>
+      <div class="muted">Un tipo de conteo por línea.</div></div></div>
+    <div class="panel"><div class="panel-hd">Personal de conteo</div><div class="panel-bd">
+      <textarea rows="8" style="width:100%" data-l="responsables">${U.esc(CFG.responsables.join('\n'))}</textarea>
+      <div class="muted">Un responsable por línea.</div></div></div>
+  </div>
+  <div class="panel"><div class="panel-hd">Datos del sistema</div><div class="panel-bd">
+    <div class="grid2">
+      <fieldset><legend>Contenido actual</legend>
+        <div class="dl">
+          <dt>Existencias</dt><dd>${U.n(DB.stock.length)} línea(s)</dd>
+          <dt>Foto de existencias</dt><dd>${DB.foto.fecha?DB.foto.fecha+' '+DB.foto.hora+
+            (DB.fotoVieja()>1?' - '+DB.fotoVieja()+' dia(s) de antiguedad':''):'sin cargar'}</dd>
+        </div>
+        <div class="hr"></div>
+        <div class="inline">
+          <button class="btn pri" data-maestros>Abrir artículos y existencias</button>
+        </div>
+        <div class="muted" style="margin-top:4px">Ahí se dan de alta artículos y ubicaciones a mano
+        y se registran entradas de existencia, sin necesidad de cargar un archivo.</div>
+        <div class="hr"></div>
+        <label class="inline"><input type="checkbox" data-auto ${DB.autoguardar?'checked':''}>
+          Guardar en este navegador</label>
+        <div class="muted" style="margin-top:4px">Apagado de fábrica: la app abre siempre en blanco.
+        Prendido, el conteo del día sobrevive a un F5 o a un apagón, guardado en <b>esta máquina
+        y este navegador</b>. Al apagarlo se borra la copia. No es respaldo: para llevarse los datos, exporte a CSV.</div>
+      </fieldset>
+      <fieldset id="cargar-exist"><legend>Cargar existencias</legend>
+        <div class="muted">La forma mas rapida: <b>elija o arrastre su archivo de Excel (.xlsx) o CSV</b>.
+        Tambien puede copiar las celdas en Excel y pegarlas aqui con Ctrl+V. No hay que convertir nada ni ordenar columnas.</div>
+        <div class="form-grid" style="margin-top:6px">
+          <label class="lb">Pegue aqui</label>
+          <textarea rows="5" data-pegar placeholder="Pegue las celdas copiadas de Excel, o arrastre un archivo aqui"></textarea>
+          <label class="lb">o un archivo</label><input type="file" accept=".xlsx,.xlsm,.xls,.csv,.txt,.tsv" data-file>
+        </div>
+        <div class="hr"></div>
+        <div class="inline">
+          <button class="btn pri" data-importar>Revisar y cargar</button>
+          <button class="btn" data-plantilla>Descargar plantilla</button>
+          <label class="inline"><input type="checkbox" data-reemplazar> Reemplazar todo lo que hay</label>
+        </div>
+        <div class="muted" style="margin-top:4px">Lo unico obligatorio es <b>ubicacion</b> y <b>codigo de articulo</b>;
+        lo demas se rellena solo. Las columnas se reconocen por su nombre, en cualquier orden
+        (ubicacion, sku, descripcion, um, clase, costo, lote, vence, cantidad y sus variantes).
+        Si el articulo ya existe en esa ubicacion y lote, se actualiza la cantidad en vez de duplicarlo.</div>
+      </fieldset>
+    </div>
+  </div></div>
+  <details class="panel" id="zona-borrar">
+    <summary class="panel-hd" style="cursor:pointer">Borrar datos</summary>
+    <div class="panel-bd">
+      <div class="muted">Estas acciones no se pueden deshacer. Piden escribir la palabra BORRAR para continuar.</div>
+      <div class="inline" style="margin-top:8px">
+        <button class="btn dan" data-wipe-mov>Borrar conteos y discrepancias</button>
+        <button class="btn dan" data-wipe-all>Borrar todo, incluidos los maestros</button>
+      </div>
+    </div>
+  </details>`;
+
+  el('view').querySelector('[data-save]').onclick=()=>{
+    el('view').querySelectorAll('[data-c]').forEach(i=>{
+      CFG[i.dataset.c]= i.type==='number' ? +i.value : i.value;
+    });
+    el('view').querySelectorAll('[data-tol]').forEach(i=>{
+      const [k,p]=i.dataset.tol.split('.'); CFG.tolerancia[k][p]=+i.value;
+    });
+    el('view').querySelectorAll('[data-frec]').forEach(i=>CFG.frecuencia[i.dataset.frec]=+i.value);
+    el('view').querySelectorAll('[data-l]').forEach(t=>{
+      CFG[t.dataset.l]=t.value.split(t.tagName==='TEXTAREA'?'\n':',').map(x=>x.trim()).filter(Boolean);
+    });
+    DB.log('Configuración','Guardar parámetros',
+      `Meta ${CFG.metaExactitud}% - tolerancia A/B/C ${CFG.tolerancia.A.pct}/${CFG.tolerancia.B.pct}/${CFG.tolerancia.C.pct}%`);
+    UI.msg('Configuración guardada. Las reglas se aplican de inmediato.','ok');
+    APP.pintarNav(); APP.pintarHeader(); VIEWS.configuracion();
+  };
+  el('view').querySelector('[data-rest]').onclick=()=>VIEWS.configuracion();
+
+  /* --- Datos del sistema ---------------------------------------------- */
+  const recargar=()=>{ APP.pintarHeader(); APP.pintarNav(); VIEWS.configuracion(); };
+  el('view').querySelector('[data-maestros]').onclick=()=>APP.ir('maestros');
+  /* Borrar pide escribir la palabra: un clic suelto no alcanza */
+  const borrarEscribiendo=(titulo,texto,fn)=>UI.modal(titulo,
+    `<p>${U.esc(texto)}</p><p class="muted" style="margin-top:8px">Escriba <b>BORRAR</b> para continuar:</p>
+     <input type="text" data-conf style="width:100%" autocomplete="off">`,
+    [{txt:'Cancelar'},{txt:'Borrar',cls:'dan',fn:host=>{
+      if(host.querySelector('[data-conf]').value.trim().toUpperCase()!=='BORRAR'){
+        UI.msg('Escriba BORRAR para continuar','err'); return false; }
+      fn(); }}]);
+  el('view').querySelector('[data-wipe-mov]').onclick=()=>borrarEscribiendo('Borrar conteos y discrepancias',
+    'Se eliminan todos los conteos, discrepancias, ajustes e historial. Los productos, ubicaciones y existencias se mantienen.',
+    ()=>{ DB.limpiar(false); UI.msg('Conteos, ajustes e historial eliminados','ok'); recargar(); });
+  el('view').querySelector('[data-wipe-all]').onclick=()=>borrarEscribiendo('Borrar todo',
+    'Se elimina absolutamente todo: productos, ubicaciones, existencias, conteos, ajustes e historial.',
+    ()=>{ DB.limpiar(true); UI.msg('Base vacía. Cargue sus existencias para empezar','ok'); recargar(); });
+  el('view').querySelector('[data-hist]').onclick=()=>APP.ir('historial');
+  const ca=el('view').querySelector('[data-auto]');
+  if(ca) ca.onchange=()=>{ DB.prender(ca.checked);
+    if(ca.checked){ DB.guardar(true); UI.msg('Ahora se guarda en este navegador','ok'); }
+    else UI.msg('Guardado apagado y copia borrada. La app abrira en blanco','ok'); };
+  el('view').querySelector('[data-plantilla]').onclick=()=>{
+    const b=new Blob(['\ufeff'+DB.plantillaCSV()],{type:'text/csv;charset=utf-8'});
+    const a=document.createElement('a'); a.href=URL.createObjectURL(b);
+    a.download='plantilla_existencias.csv'; a.click(); URL.revokeObjectURL(a.href);
+    UI.msg('Plantilla descargada','ok');
+  };
+  let csvPendiente='';
+  const ta=el('view').querySelector('[data-pegar]');
+  /* Excel (.xlsx) o CSV: se lee directo, sin convertir nada, y se abre la revision (no se carga nada hasta confirmar) */
+  const tomarArchivo=f=>{
+    if(!f) return;
+    U.textoDeArchivo(f).then(t=>{
+      csvPendiente=t; ta.value='';
+      UI.msg('Archivo leído: '+f.name,'ok');
+      el('view').querySelector('[data-importar]').click();
+    }).catch(e=>UI.msg(e.message||'No se pudo leer el archivo','err'));
+  };
+  el('view').querySelector('[data-file]').onchange=e=>{ tomarArchivo(e.target.files&&e.target.files[0]); e.target.value=''; };
+  ta.addEventListener('input',()=>{ csvPendiente=''; });
+  /* Arrastrar el archivo encima del cuadro tambien vale */
+  ['dragover','drop'].forEach(ev=>ta.addEventListener(ev,e=>{
+    e.preventDefault();
+    if(ev==='drop') tomarArchivo(e.dataTransfer.files[0]);
+  }));
+  el('view').querySelector('[data-importar]').onclick=()=>{
+    const texto=csvPendiente||ta.value;
+    if(!texto.trim()) return UI.msg('Pegue las celdas o elija un archivo','err');
+    const r=DB.leer(texto);
+    if(!r.datos.length) return UI.modal('No se pudo leer',
+      `<div class="hint">No salio ninguna linea aprovechable. Revise que cada fila traiga al menos
+       la ubicacion y el codigo del articulo.</div>
+       ${r.errores.length?`<div class="dl"><dt>Primeros avisos</dt><dd>${
+         U.esc(r.errores.slice(0,5).join(' · '))}</dd></div>`:''}`,[{txt:'Entendido'}]);
+
+    const reemplazar=el('view').querySelector('[data-reemplazar]').checked;
+    const nombres={ub:'Ubicacion',tipo:'Tipo',sku:'Articulo',desc:'Descripcion',um:'Unidad',
+      clase:'Clase',costo:'Costo',lote:'Lote',vence:'Vence',cant:'Cantidad'};
+    const ix=new Set(DB.stock.map(x=>x.ub+'|'+x.sku+'|'+x.lote));
+    const nuevos=r.datos.filter(d=>!ix.has(d.ub+'|'+d.sku+'|'+d.lote)).length;
+    const cab=['ub','sku','desc','lote','cant'];
+    /* Vista previa: se ve lo que entendio ANTES de tocar nada */
+    UI.modal('Revisar la carga',
+      `<div class="dl">
+         <dt>Se leyeron</dt><dd>${U.n(r.datos.length)} linea(s), separadas por ${r.sep}</dd>
+         <dt>Columnas reconocidas</dt><dd>${r.reconocidas.map(k=>nombres[k]).join(' · ')}</dd>
+         <dt>Resultado</dt><dd>${U.n(nuevos)} nueva(s), ${U.n(r.datos.length-nuevos)} que actualizan
+           una existencia que ya esta</dd>
+         ${r.errores.length?`<dt class="neg">Filas descartadas</dt><dd class="neg">${U.n(r.errores.length)} - ${
+           U.esc(r.errores.slice(0,3).join(' · '))}${r.errores.length>3?' ...':''}</dd>`:''}
+       </div>
+       <div class="muted" style="margin:6px 0 2px">Asi quedan las primeras filas:</div>
+       <div class="tbl-wrap"><table class="t"><thead><tr>${
+         cab.map(k=>`<th>${nombres[k]}</th>`).join('')}</tr></thead><tbody>${
+         r.datos.slice(0,5).map(d=>`<tr>${cab.map(k=>
+           `<td class="${k==='cant'?'r':''}">${U.esc(d[k])}</td>`).join('')}</tr>`).join('')
+       }</tbody></table></div>
+       ${reemplazar?`<div class="hint neg">Marco "Reemplazar todo": se borran las existencias,
+         conteos y casos que hay ahora mismo.</div>`:''}`,
+      [{txt:'Cancelar'},{txt:'Cargar',cls:'pri',fn:()=>{
+        if(reemplazar){ DB.stock=[]; DB.conteos=[]; DB.discrepancias=[]; DB.seq={conteo:0,disc:0}; }
+        const a=DB.aplicar(r.datos);
+        UI.msg(`${U.n(a.alta)} existencia(s) nuevas y ${U.n(a.upd)} actualizada(s)`,'ok');
+        ta.value=''; csvPendiente='';
+        recargar();
+      }}]);
+  };
+  if(p&&p.foco==='cargar'){ const f=el('cargar-exist'); if(f){ f.scrollIntoView({block:'start'}); ta.focus(); } }
+};
+
+/* ---------- 5.10 HISTORIAL --------------------------------------------- */
+VIEWS.historial=()=>{
+  ST.hi??={render:VIEWS.historial,f:{modulo:'',q:''}};
+  const f=ST.hi.f;
+  el('view').innerHTML=hd('Historial','Inicio › Configuración › Historial',
+    `<button class="btn" data-volver>Volver</button>
+     <button class="btn" data-exp>Exportar</button>`)+
+  `<div class="panel">
+    <div class="filters">
+      <div class="f"><label>Buscar</label><input type="text" data-q value="${U.esc(f.q)}" placeholder="Acción, documento o detalle"></div>
+      <div class="f"><label>Módulo</label><select data-m>${opts(['','Conteos','Discrepancias','Ajustes','Maestros','Configuracion','Sistema'],f.modulo)}</select></div>
+      <div class="f"><label>&nbsp;</label><button class="btn" data-limpiar>Limpiar filtros</button></div>
+    </div>
+    <div id="hi-t"></div>
+  </div>`;
+  const rows=DB.historial.filter(h=>(!f.modulo||h.modulo===f.modulo)&&
+    (!f.q||(h.accion+' '+h.detalle).toLowerCase().includes(f.q.toLowerCase())));
+  const cols=[
+    {key:'ts',label:'Fecha y hora',w:150,cls:()=>'mono'},
+    {key:'usuario',label:'Usuario',w:110},
+    {key:'modulo',label:'Módulo',w:110},
+    {key:'accion',label:'Acción',w:180},
+    {key:'detalle',label:'Detalle'}
+  ];
+  UI.tabla(el('hi-t'),{cols,rows,state:ST.hi,vacio:'Sin movimientos registrados.'});
+  bindFiltros(ST.hi,{'[data-q]':'q','[data-m]':'modulo'});
+  el('view').querySelector('[data-exp]').onclick=()=>U.csv('historial',cols,rows);
+  el('view').querySelector('[data-volver]').onclick=()=>APP.ir('configuracion');
+};
+
+/* ==========  6. ACCIONES TRANSVERSALES ================================= */
+const ACC={
+  /* Punto único de entrada: el armador de conteos */
+  nuevoConteo(){ APP.ir('nuevo'); },
+
+  /* --- Alta y edición de maestros ------------------------------------ Todo lo que se crea aquí queda registrado en Historial, igual que un movimiento de */
+
+  /* Listas de ayuda para escribir rápido sin memorizar códigos */
+  _listas(){
+    return `<datalist id="dl-sku">${DB.productos.slice(0,800).map(p=>
+        `<option value="${U.esc(p.sku)}">${U.esc(p.desc)}</option>`).join('')}</datalist>
+      <datalist id="dl-ub">${DB.ubicaciones.slice(0,800).map(u=>
+        `<option value="${U.esc(u.cod)}">`).join('')}</datalist>`;
+  },
+
+  formArticulo(p){
+    const nuevo=!p;
+    UI.modal(nuevo?'Nuevo artículo':'Artículo '+p.sku,
+      `<div class="form-grid">
+         <label class="lb">SKU</label>
+         <input type="text" data-sku value="${U.esc(p?p.sku:'')}" ${nuevo?'':'readonly'} placeholder="ARZ-1050">
+         <label class="lb">Descripción</label><input type="text" data-desc value="${U.esc(p?p.desc:'')}">
+         <label class="lb">Familia</label><input type="text" data-fam value="${U.esc(p?p.familia:'')}">
+         <label class="lb">Unidad de medida</label>
+         <input type="text" data-um value="${U.esc(p?p.um:'UN')}" placeholder="CJ, SAC, UN, FD">
+         <label class="lb">Clase ABC</label><select data-cl>${opts(['A','B','C'],p?p.clase:'C')}</select>
+         <label class="lb">Costo unitario</label>
+         <input type="number" step="0.01" min="0" data-costo value="${p?p.costo:''}">
+       </div>`,
+      [{txt:'Cancelar'},{txt:nuevo?'Crear artículo':'Guardar',cls:'pri',fn:host=>{
+        const g=s=>host.querySelector(s).value.trim();
+        const sku=g('[data-sku]').toUpperCase(), desc=g('[data-desc]');
+        if(!sku||!desc){ UI.msg('SKU y descripción son obligatorios','err'); return false; }
+        if(nuevo && DB.productos.some(x=>x.sku===sku)){
+          UI.msg('Ya existe un artículo con el SKU '+sku,'err'); return false; }
+        const datos={sku,desc,familia:g('[data-fam]')||desc.split(' ')[0].toUpperCase(),
+          um:g('[data-um]').toUpperCase()||'UN',clase:g('[data-cl]'),
+          costo:+g('[data-costo]')||0};
+        if(nuevo) DB.productos.push(datos);
+        else Object.assign(p,datos);
+        DB.indexar();
+        DB.log('Maestros',nuevo?'Alta de artículo':'Edición de artículo',
+          `${sku} · ${desc} · clase ${datos.clase} · costo ${U.m(datos.costo)}`);
+        UI.msg('Artículo '+sku+(nuevo?' creado':' actualizado'),'ok');
+        if(ST.ma) ST.ma.render();
+      }}]);
+  },
+
+  formUbicacion(u){
+    const nuevo=!u;
+    UI.modal(nuevo?'Nueva ubicación':'Ubicación '+u.cod,
+      `<div class="form-grid">
+         <label class="lb">Código</label>
+         <input type="text" data-cod value="${U.esc(u?u.cod:'')}" ${nuevo?'':'readonly'} placeholder="A-01-2-3 o A-PI-01">
+         <div class="hint">La zona se toma del primer tramo del código. Si contiene PI se registra como piso.</div>
+         <label class="lb">Tipo</label><select data-tipo>${opts(['RACK','PISO'],u?u.tipo:'RACK')}</select>
+         <label class="lb">Pasillo</label><input type="number" min="0" data-p value="${u?u.pasillo||0:0}">
+         <label class="lb">Rack</label><input type="number" min="0" data-r value="${u?u.rack||0:0}">
+         <label class="lb">Nivel</label><input type="number" min="0" data-n value="${u?u.nivel||0:0}">
+         <label class="lb">Capacidad</label><input type="number" min="0" data-cap value="${u?u.cap||0:0}">
+       </div>`,
+      [{txt:'Cancelar'},{txt:nuevo?'Crear ubicación':'Guardar',cls:'pri',fn:host=>{
+        const g=s=>host.querySelector(s).value.trim();
+        const cod=g('[data-cod]').toUpperCase();
+        if(!cod){ UI.msg('El código es obligatorio','err'); return false; }
+        if(nuevo && DB.ubicaciones.some(x=>x.cod===cod)){
+          UI.msg('La ubicación '+cod+' ya existe','err'); return false; }
+        const zona=cod.split('-')[0];
+        const datos={cod,zona,tipo:g('[data-tipo]'),pasillo:+g('[data-p]')||0,
+          rack:+g('[data-r]')||0,nivel:+g('[data-n]')||0,cap:+g('[data-cap]')||0};
+        if(nuevo) DB.ubicaciones.push(datos); else Object.assign(u,datos);
+        if(!CFG.zonas.includes(zona)) CFG.zonas.push(zona);
+        DB.indexar();
+        DB.log('Maestros',nuevo?'Alta de ubicación':'Edición de ubicación',`${cod} · zona ${zona} · ${datos.tipo}`);
+        UI.msg('Ubicación '+cod+(nuevo?' creada':' actualizada'),'ok');
+        if(ST.ma) ST.ma.render();
+      }}]);
+  },
+
+  /* Entrada o salida de existencia. */
+  formEntrada(pref){
+    pref=pref||{};
+    UI.modal('Entrada de existencia',
+      ACC._listas()+
+      `<div class="form-grid">
+         <label class="lb">Ubicación</label>
+         <input type="text" list="dl-ub" data-ub value="${U.esc(pref.ub||'')}" placeholder="A-01-2-3">
+         <label class="lb">Artículo (SKU)</label>
+         <input type="text" list="dl-sku" data-sku value="${U.esc(pref.sku||'')}" placeholder="ARZ-1005">
+         <label class="lb">Lote</label>
+         <input type="text" data-lote value="${U.esc(pref.lote||'')}" placeholder="SIN LOTE si no aplica">
+         <label class="lb">Vencimiento</label>
+         <input type="date" data-vence value="${U.esc(pref.vence||'')}">
+         <label class="lb">Cantidad</label>
+         <input type="number" step="1" data-cant value="" placeholder="Positivo entra, negativo sale">
+         <label class="lb">Documento o nota</label>
+         <input type="text" data-nota placeholder="Factura, orden de compra, traslado">
+       </div>
+       <div class="hint">Si la combinación ubicación + artículo + lote ya existe, la cantidad se suma a esa línea.</div>`,
+      [{txt:'Cancelar'},{txt:'Registrar entrada',cls:'pri',fn:host=>{
+        const g=s=>host.querySelector(s).value.trim();
+        const ub=g('[data-ub]').toUpperCase(), sku=g('[data-sku]').toUpperCase();
+        const lote=g('[data-lote]').toUpperCase()||'SIN LOTE';
+        const cant=Math.round(+g('[data-cant]'));
+        if(!ub||!sku){ UI.msg('Ubicación y artículo son obligatorios','err'); return false; }
+        if(!cant){ UI.msg('Indique una cantidad distinta de cero','err'); return false; }
+        if(!DB.productos.some(p=>p.sku===sku)){
+          UI.msg('El artículo '+sku+' no existe. Créelo primero en la pestaña Artículos','err'); return false; }
+        let u=DB.ubicaciones.find(x=>x.cod===ub);
+        if(!u){
+          u={cod:ub,zona:ub.split('-')[0],tipo:/-PI-/.test(ub)?'PISO':'RACK',pasillo:0,rack:0,nivel:0,cap:0};
+          DB.ubicaciones.push(u);
+          if(!CFG.zonas.includes(u.zona)) CFG.zonas.push(u.zona);
+          DB.log('Maestros','Alta de ubicación',`${ub} · creada al registrar una entrada`);
+        }
+        let s=DB.stockDe(ub,sku,lote), creada=false;
+        if(s){
+          if(s.teorico+cant<0){ UI.msg('La salida deja la existencia en negativo','err'); return false; }
+          s.teorico+=cant;
+          if(g('[data-vence]')) s.vence=g('[data-vence]');
+        } else {
+          if(cant<0){ UI.msg('No existe esa línea: no se puede registrar una salida','err'); return false; }
+          s={id:DB.stock.reduce((m,x)=>Math.max(m,x.id),0)+1,ub,zona:u.zona,tipo:u.tipo,sku,lote,
+             vence:g('[data-vence]')||'',teorico:cant,ultConteo:U.hoy()};
+          DB.stock.push(s); creada=true;
+        }
+        DB.indexar();
+        DB.log('Maestros',cant>0?'Entrada de existencia':'Salida de existencia',
+          `${ub} · ${sku} · lote ${lote} · ${cant>0?'+':''}${U.n(cant)} · saldo ${U.n(s.teorico)}`+
+          (g('[data-nota]')?' · '+g('[data-nota]'):'')+(creada?' · línea nueva':''));
+        UI.msg(`${cant>0?'Entrada':'Salida'} registrada · ${sku} en ${ub} · saldo ${U.n(s.teorico)}`,'ok');
+        if(ST.ma) ST.ma.render();
+      }}]);
+  },
+
+  /* Corrección directa de una línea: se registra como corrección manual */
+  formExistencia(s){
+    if(!s) return;
+    UI.modal('Existencia '+s.sku+' en '+s.ub,
+      `<div class="form-grid">
+         <label class="lb">Ubicación</label><input type="text" value="${s.ub}" readonly>
+         <label class="lb">Artículo</label><input type="text" value="${s.sku} · ${U.esc(DB.prod(s.sku).desc)}" readonly>
+         <label class="lb">Lote</label><input type="text" data-lote value="${U.esc(s.lote)}">
+         <label class="lb">Vencimiento</label><input type="date" data-vence value="${U.esc(s.vence||'')}">
+         <label class="lb">Cantidad en sistema</label>
+         <input type="number" step="1" min="0" data-cant value="${s.teorico}">
+         <div class="hint">Corregir aquí cambia la existencia teórica sin pasar por un conteo. Queda en Historial.</div>
+       </div>`,
+      [{txt:'Cancelar'},{txt:'Guardar',cls:'pri',fn:host=>{
+        const g=x=>host.querySelector(x).value.trim();
+        const cant=Math.round(+g('[data-cant]'));
+        if(cant<0){ UI.msg('La cantidad no puede ser negativa','err'); return false; }
+        const antes=s.teorico;
+        s.lote=g('[data-lote]').toUpperCase()||'SIN LOTE';
+        s.vence=g('[data-vence]'); s.teorico=cant;
+        DB.indexar();
+        DB.log('Maestros','Corrección manual de existencia',
+          `${s.ub} · ${s.sku} · lote ${s.lote} · ${U.n(antes)} → ${U.n(cant)}`);
+        UI.msg('Existencia actualizada','ok');
+        if(ST.ma) ST.ma.render();
+      }}]);
+  },
+
+  borrarExistencia(s){
+    if(!s) return;
+    const usada=DB.conteos.filter(c=>c.estado!=='CERRADO'&&c.lineas.some(l=>l.stockId===s.id));
+    if(usada.length)
+      return UI.msg('No se puede eliminar: está incluida en el conteo '+usada[0].id,'err');
+    UI.confirmar('Eliminar existencia',
+      `Se elimina la línea ${s.sku} en ${s.ub} (lote ${s.lote}, ${U.n(s.teorico)} unidades). No se puede deshacer.`,()=>{
+      DB.stock=DB.stock.filter(x=>x.id!==s.id);
+      DB.indexar();
+      DB.log('Maestros','Baja de existencia',`${s.ub} · ${s.sku} · lote ${s.lote} · ${U.n(s.teorico)} unidades`);
+      UI.msg('Existencia eliminada','ok');
+      if(ST.ma) ST.ma.render();
+    });
+  },
+
+  /* --- Reglas de resolucion de diferencias ---------------------------- Tres salidas y nada mas. */
+
+  /* SALIDA 2 - Investigar: nace una discrepancia con vida propia */
+  investigarLineas(c,ls,causa,st,confirmar,silencio){
+    const tot=ls.reduce((a,l)=>a+DB.valor(l),0);
+    const hacer=()=>{
+      ls.forEach(l=>{
+        const d={id:U.id('DC',++DB.seq.disc),conteo:c.id,fecha:U.hoy(),
+          ub:l.ub,sku:l.sku,desc:l.desc,lote:l.lote,clase:l.clase,costo:l.costo,
+          teorico:l.teorico,fisico:DB.fis(l),dif:DB.dif(l),valor:DB.valor(l),
+          estado:'ABIERTA',responsable:'',compromiso:'',
+          causa:causa&&causa.get(l.stockId)||'',resuelvePor:'',fechaResuelta:'',
+          ajustado:false,perdida:0,notas:[]};
+        ACC._nota(d,'Caso abierto desde el conteo '+c.id+
+          ' - sistema '+U.n(l.teorico)+', contado '+U.n(DB.fis(l))+
+          ' ('+(DB.dif(l)>0?'+':'')+U.n(DB.dif(l))+')');
+        DB.discrepancias.unshift(d);
+        l.cerrada=true; l.decision='En investigacion - '+d.id; l.disc=d.id;
+        if(st&&st.sel) st.sel.delete(l.stockId);
+      });
+      DB.log('Discrepancias','Abrir investigacion',
+        `${c.id} - ${ls.length} caso(s) - ${U.m(tot)} en juego`);
+      if(!silencio){
+        UI.msg(ls.length+' caso(s) abiertos. El conteo queda senalado hasta que se resuelvan','warn');
+        st.render();
+      }
+    };
+    if(confirmar) UI.confirmar('Enviar a investigacion',
+      `${ls.length} linea(s) - ${U.m(tot)} en juego. El sistema NO se toca: el caso queda abierto `+
+      `hasta que alguien lo resuelva. Continuar?`,hacer);
+    else hacer();
+  },
+
+  /* Terminar */
+  terminar(c){
+    const a=DB.avance(c), sinContar=a.t-a.h;
+    /* Solo lo que sigue sin resolver */
+    const dif=c.lineas.filter(l=>DB.estadoLinea(l)==='DIFERENCIA'&&!l.cerrada);
+    const cuadran=c.lineas.filter(l=>DB.fis(l)!=null&&DB.estadoLinea(l)!=='DIFERENCIA').length;
+    const valorDif=dif.reduce((x,l)=>x+DB.valor(l),0);
+
+    /* Lo que es igual en las dos salidas: las lineas que no exigen decision */
+    const asentarBase=()=>{
+      c.lineas.forEach(l=>{
+        if(l.cerrada) return;
+        if(DB.fis(l)==null){ l.sinContar=true; l.cerrada=true;
+          l.decision='Sin contar, se acepto el sistema'; return; }
+        const est=DB.estadoLinea(l);
+        if(est==='EXACTO'){   l.cerrada=true; l.decision='Sin diferencia'; return; }
+        if(est==='TOLERADO'){ l.cerrada=true; l.decision='Dentro de tolerancia'; }
+      });
+    };
+    const sellar=()=>{
+      c.estado='CERRADO'; c.fechaCierre=U.hoy(); c.fechaEjec=c.fechaEjec||U.hoy();
+      const e=ESTATUS(c);
+      DB.log('Conteos','Terminar inventario',
+        `${c.id} - exactitud ${U.p(DB.eri(c.lineas))} - ${e.k}`);
+      UI.msg(`${c.id} terminado: ${e.k}. Esta en Resultados`,
+        e.k===EST_OK?'ok':'warn');
+      APP.ir('reportes');
+    };
+
+    /* SALIDA A - Cerrar: el conteo vale como esta */
+    const cerrar=()=>{
+      asentarBase();
+      dif.forEach(l=>{ l.cerrada=true; l.confirmada=true;
+        l.quien=CFG.usuario; l.cuando=U.hoy();
+        l.decision='Diferencia confirmada'+(l.causa?' - '+l.causa:' - sin causa declarada'); });
+      sellar();
+    };
+    /* SALIDA B - Investigar: cada diferencia abre un caso */
+    const investigar=()=>{
+      asentarBase();
+      if(dif.length) ACC.investigarLineas(c,dif,
+        new Map(dif.map(l=>[l.stockId,l.causa||''])),null,false,true);
+      sellar();
+    };
+
+    const btns=[{txt:'Seguir contando'}];
+    if(dif.length) btns.push({txt:'Enviar a investigacion',fn:investigar});
+    btns.push({txt:dif.length?'Cerrar con diferencias':'Cerrar inventario',cls:'pri',fn:cerrar});
+
+    UI.modal('Terminar el inventario '+c.id,
+      `<div class="dl">
+         <dt>Contadas</dt><dd>${U.n(a.h)} de ${U.n(a.t)} linea(s)</dd>
+         <dt>Cuadraron</dt><dd>${U.n(cuadran)} linea(s), incluyendo las que entran en tolerancia</dd>
+         <dt>No cuadraron</dt><dd class="${dif.length?'neg':''}">${U.n(dif.length)} linea(s),
+           ${U.m(valorDif)}</dd>
+       </div>
+       ${sinContar?`<div class="hint">Quedan ${U.n(sinContar)} linea(s) sin contar: se aceptan con la
+         cantidad del sistema. Si no era la idea, vuelva y termine de contar.</div>`:''}
+       ${dif.length
+         ? `<div class="dl" style="margin-top:8px">
+              <dt>Cerrar con diferencias</dt><dd>El conteo es real y se da por bueno. Las
+                ${U.n(dif.length)} diferencia(s) quedan confirmadas y el inventario se archiva
+                <b>CON DIFERENCIAS</b>. La causa se anota despues, en Resultados.</dd>
+              <dt>Enviar a investigacion</dt><dd>Se abre un caso por cada diferencia, con
+                responsable y bitacora. El inventario queda <b>CON DIFERENCIAS</b> y los casos
+                se siguen en la pestana Casos de Resultados.</dd>
+            </div>`
+         : `<div class="hint">No hay diferencias: el inventario se archiva <b>CUADRÓ</b>.</div>`}
+       <div class="hint">En ningun caso se toca la existencia del sistema: la correccion se hace
+         en el sistema que manda.</div>`,
+      btns);
+  },
+
+  /* Ningun estatus es un callejon sin salida. */
+  volverAConteo(c){
+    if(!c) return;
+    const e=ESTATUS(c);
+    if(e.modo==='seguir') return APP.ir('captura',{id:c.id});
+    const reiniciar = e.modo==='reiniciar';
+    const casos = DB.discAbiertas(c.id);
+    UI.confirmar(reiniciar?'Reiniciar el conteo':'Reabrir el conteo',
+      reiniciar
+        ? `${c.id} vuelve a la etapa Contar donde se quedo.`+
+          (casos.length?` Las ${U.n(casos.length)} linea(s) en investigacion se dejan en blanco para `+
+           `contarlas otra vez; los casos siguen abiertos con su bitacora.`:'')+
+          ` Continuar?`
+        : `${c.id} vuelve a la etapa Contar tal como quedo. Lo ya decidido se mantiene. Continuar?`,
+      ()=>{
+        c.estado='ABIERTO'; c.fechaCierre=null;
+        if(reiniciar){
+          c.lineas.forEach(l=>{
+            const enCaso = l.disc && casos.some(d=>d.id===l.disc);
+            if(enCaso || l.sinContar){
+              l.fisico=null; l.sinContar=false; l.cerrada=false;
+              l.decision=''; l.confirmada=false; l.causa='';
+            }
+          });
+          casos.forEach(d=>ACC._nota(d,'El conteo '+c.id+' se reinicio: la linea vuelve a contarse'));
+        }
+        DB.log('Conteos',reiniciar?'Reiniciar conteo':'Reabrir conteo',
+          `${c.id} - vuelve a la etapa Contar`);
+        UI.msg(c.id+(reiniciar?' reiniciado':' reabierto')+'. Esta otra vez en Contar','ok');
+        APP.ir('captura',{id:c.id});
+      });
+  },
+  /* No hay que guardarlo todo: lo que ya no sirve se borra */
+  eliminarReporte(c){
+    if(!c) return;
+    const casos=DB.discDe(c.id).length;
+    UI.confirmar('Eliminar el inventario '+c.id,
+      `Se borra el inventario completo con sus ${U.n(c.lineas.length)} linea(s)`+
+      (casos?` y sus ${U.n(casos)} caso(s) de discrepancia`:'')+
+      `. Si va a necesitar la constancia, exporte el detalle antes. Continuar?`,()=>{
+        DB.conteos=DB.conteos.filter(x=>x.id!==c.id);
+        DB.discrepancias=DB.discrepancias.filter(d=>d.conteo!==c.id);
+        DB.log('Reportes','Eliminar inventario',`${c.id} - ${c.lineas.length} linea(s)`);
+        UI.msg('Inventario '+c.id+' eliminado','ok');
+        APP.ir('reportes');
+      });
+  },
+
+  /* Salida de emergencia */
+  eliminarConteo(c){
+    if(!c) return;
+    if(c.estado==='CERRADO') return UI.msg('Un conteo cerrado no se elimina','warn');
+    const casos=DB.discDe(c.id).length;
+    UI.confirmar('Eliminar conteo',
+      `Se elimina ${c.id} con ${U.n(c.lineas.length)} linea(s)`+
+      (casos?` y ${U.n(casos)} caso(s) de discrepancia abiertos desde el`:'')+
+      `. Esto no se puede deshacer. Continuar?`,()=>{
+        DB.conteos=DB.conteos.filter(x=>x.id!==c.id);
+        DB.discrepancias=DB.discrepancias.filter(d=>d.conteo!==c.id);
+        DB.log('Conteos','Eliminar conteo',`${c.id} - ${c.lineas.length} linea(s)`);
+        UI.msg('Conteo '+c.id+' eliminado','ok');
+        APP.ir('inventario',{etapa:'Contar'});
+      });
+  },
+
+  /* --- La investigacion ---------------------------------------------- */
+  _nota(d,txt){
+    (d.notas??=[]).push({ts:U.ts(),usuario:CFG.usuario,txt});
+  },
+  formInvestigar(ls,cb){
+    const uno=ls.length===1?ls[0]:null;
+    UI.modal(uno?'Investigar el caso '+uno.id:'Investigar '+ls.length+' caso(s)',
+      `<div class="form-grid">
+         <label class="lb">Quien investiga</label>
+         <input type="text" data-r list="dl-resp" value="${U.esc(uno?uno.responsable:'')}" placeholder="Nombre del responsable">
+         <datalist id="dl-resp">${CFG.responsables.map(r=>`<option value="${U.esc(r)}">`).join('')}</datalist>
+         <label class="lb">Fecha de compromiso</label>
+         <input type="date" data-f value="${U.esc(uno?uno.compromiso:'')||U.addDays(U.hoy(),7)}">
+         <label class="lb">Que hay que averiguar</label>
+         <textarea rows="3" data-n placeholder="Revisar facturas, buscar en ubicaciones vecinas, confirmar con recepcion..."></textarea>
+       </div>`,
+      [{txt:'Cancelar'},{txt:'Poner en investigacion',cls:'pri',fn:host=>{
+        const g=x=>host.querySelector(x).value.trim();
+        const r=g('[data-r]');
+        if(!r){ UI.msg('Indique quien investiga','err'); return false; }
+        if(!CFG.responsables.includes(r)) CFG.responsables.push(r);
+        ls.forEach(d=>{
+          d.estado='EN INVESTIGACION'; d.responsable=r; d.compromiso=g('[data-f]');
+          ACC._nota(d,'Asignado a '+r+(g('[data-f]')?', compromiso '+g('[data-f]'):'')+
+            (g('[data-n]')?' - '+g('[data-n]'):''));
+        });
+        DB.log('Discrepancias','Poner en investigacion',`${ls.length} caso(s) - responsable ${r}`);
+        UI.msg(ls.length+' caso(s) en investigacion','ok');
+        if(cb) cb();
+      }}]);
+  },
+  formNota(ls,cb){
+    UI.modal('Agregar nota a la bitacora',
+      `<div class="form-grid">
+         <label class="lb">Nota</label>
+         <textarea rows="4" data-n placeholder="Que se averiguo hoy"></textarea>
+       </div>
+       <div class="hint">La bitacora no se borra: es la memoria del caso.</div>`,
+      [{txt:'Cancelar'},{txt:'Guardar nota',cls:'pri',fn:host=>{
+        const t=host.querySelector('[data-n]').value.trim();
+        if(!t){ UI.msg('Escriba la nota','err'); return false; }
+        ls.forEach(d=>ACC._nota(d,t));
+        DB.log('Discrepancias','Nota de seguimiento',`${ls.length} caso(s)`);
+        UI.msg('Nota agregada','ok');
+        if(cb) cb();
+      }}]);
+  },
+  /* Resolver no quiere decir "no paso nada" */
+  formResolver(ls,cb){
+    const tot=ls.reduce((a,d)=>a+d.valor,0);
+    const faltante=ls.some(d=>d.dif<0);
+    UI.modal(ls.length===1?'Resolver el caso '+ls[0].id:'Resolver '+ls.length+' caso(s)',
+      `<div class="form-grid">
+         <label class="lb">Causa que se comprobo</label>
+         <select data-cz>${opts([''].concat(CFG.causas),'')}</select>
+         <label class="lb">Que se comprobo</label>
+         <select data-aj>${opts(['La diferencia era real','No habia diferencia: error de conteo'],
+           'La diferencia era real')}</select>
+         <label class="lb">Hubo perdida</label>
+         <select data-pd>${opts(['Si','No'],faltante?'Si':'No')}</select>
+         <div class="hint">Valor en juego: ${U.m(tot)}. Aunque el caso quede resuelto, el conteo
+          que lo genero conserva la senal de discrepancia. La correccion en el sistema que manda
+          se hace aparte: aqui solo queda documentado.</div>
+         <label class="lb">Como se resolvio</label>
+         <textarea rows="3" data-n placeholder="Explique en dos lineas que paso"></textarea>
+       </div>`,
+      [{txt:'Cancelar'},{txt:'Resolver caso',cls:'pri',fn:host=>{
+        const g=x=>host.querySelector(x).value;
+        const cz=g('[data-cz]');
+        if(!cz){ UI.msg('Elija la causa comprobada','err'); return false; }
+        const real=g('[data-aj]')==='La diferencia era real';
+        const hubo=g('[data-pd]')==='Si';
+        const nota=host.querySelector('[data-n]').value.trim();
+        ls.forEach(d=>{
+          d.estado='RESUELTA'; d.causa=cz; d.real=real;
+          d.perdida = hubo ? Math.abs(d.valor) : 0;
+          d.fechaResuelta=U.hoy(); d.resuelvePor=CFG.usuario;
+          ACC._nota(d,'Resuelto - '+cz+' - '+(real?'la diferencia era real':'error de conteo, no habia diferencia')+
+            (hubo?' - perdida confirmada '+U.m(Math.abs(d.valor)):' - sin perdida')+
+            (nota?' - '+nota:''));
+        });
+        DB.log('Discrepancias','Resolver caso',
+          `${ls.length} caso(s) - ${cz} - ${real?'diferencia real':'error de conteo'}`);
+        UI.msg(ls.length+' caso(s) resueltos','ok');
+        if(cb) cb();
+      }}]);
+  }
+};
+
+/* ==========  7. HELPERS DE FORMULARIO ================================== */
+function opts(lista,sel){
+  return lista.map(v=>`<option value="${U.esc(v)}" ${v===sel?'selected':''}>${v===''?'(Todos)':U.esc(v)}</option>`).join('');
+}
+function bindFiltros(st,mapa){
+  Object.entries(mapa).forEach(([sel,key])=>{
+    const e=el('view').querySelector(sel); if(!e) return;
+    const texto=(e.tagName==='INPUT'&&e.type==='text');
+    /* Escribir no puede repintar la tabla en cada tecla */
+    const aplicar=()=>{ st.f[key]=e.value; st.pag=1; st.foco=sel; st.render(); };
+    e.addEventListener(texto?'input':'change', texto
+      ? ()=>{ clearTimeout(st._deb); st._deb=setTimeout(aplicar,260); }
+      : aplicar);
+  });
+  const lim=el('view').querySelector('[data-limpiar]');
+  /* Solo se limpian los filtros enlazados */
+  if(lim) lim.onclick=()=>{ Object.values(mapa).forEach(k=>st.f[k]=''); st.pag=1; st.render(); };
+  if(st.foco){
+    const t=el('view').querySelector(st.foco);
+    if(t){ t.focus(); if(t.type==='text'&&t.setSelectionRange) t.setSelectionRange(t.value.length,t.value.length); }
+    st.foco=null;
+  }
+}
+
+/* ==========  8. ENRUTADOR Y ARRANQUE =================================== */
+const APP={
+  menu:[
+    {k:'inventario',t:'Inventario'},
+    {k:'reportes',t:'Resultados'},
+    {k:'configuracion',t:'Configuración'}
+  ],
+  actual:'inventario',
+  /* Un solo numero en el menu: todo lo que esta esperando en la linea */
+  pintarNav(){
+    el('nav').innerHTML='<div class="nav-sec">Operacion</div>'+
+      APP.menu.map((m,i)=>`<a class="nav-i ${APP.actual===m.k?'on':''}" data-k="${m.k}">${m.t}</a>`+
+        (i===1?'<div class="nav-sec">Administracion</div>':'')).join('');
+    el('nav').querySelectorAll('[data-k]').forEach(a=>a.onclick=()=>APP.ir(a.dataset.k));
+  },
+  pintarHeader(){
+    const v=DB.fotoVieja();
+    el('hd-foto').textContent = DB.foto.fecha
+      ? DB.foto.fecha+(v>1?' ('+v+' d)':'') : 'sin cargar';
+    el('hd-foto').style.color = (v===null||v>1) ? '#ffd9d9' : '';
+    el('hd-cd').textContent=CFG.centro;
+    el('hd-user').textContent=CFG.usuario+(CFG.rol?' - '+CFG.rol:'');
+    el('ft-ver').textContent='SGI v2.0'+(CFG.empresa?' - '+CFG.empresa:'');
+    el('hd-sesion').onclick=APP.editarSesion;
+    el('hd-exist').onclick=()=>APP.ir('configuracion',{foco:'cargar'});
+  },
+  editarSesion(){
+    UI.modal('Datos de la sesion',
+      `<div class="form-grid">
+         <label class="lb">Centro</label><input type="text" data-s="centro" value="${U.esc(CFG.centro)}">
+         <label class="lb">Usuario</label><input type="text" data-s="usuario" value="${U.esc(CFG.usuario)}">
+         <label class="lb">Rol</label><input type="text" data-s="rol" value="${U.esc(CFG.rol)}">
+       </div>
+       <div class="hint">Es quien firma los conteos y queda en el historial.</div>`,
+      [{txt:'Cancelar'},{txt:'Guardar',cls:'pri',fn:()=>{
+        document.querySelectorAll('#modal-host [data-s]').forEach(i=>{
+          if(i.value.trim()) CFG[i.dataset.s]=i.value.trim(); });
+        APP.pintarHeader(); DB.guardar(); UI.msg('Sesion actualizada','ok');
+      }}]);
+  },
+  cerrarMenu(){
+    el('nav').classList.remove('abierto');
+    el('nav-mask').classList.remove('on');
+  },
+  /* El boton atras del navegador tiene que moverse dentro de la app, no sacar al usuario del sitio. */
+  ir(vista,params,dePopstate){
+    APP.cerrarMenu();
+    if(VIEWS[vista]){
+      if(!dePopstate){
+        const est={v:vista,p:params||{}};
+        if(APP._ult!==vista+JSON.stringify(params||{})){
+          history.pushState(est,'','#'+vista); APP._ult=vista+JSON.stringify(params||{});
+        }
+      }
+      /* Las pantallas de detalle no salen en el menu: se marca la linea */
+      APP.actual = ['captura','nuevo','conteos'].includes(vista) ? 'inventario'
+        : (['cierre','discrepancias','discrepancia','bandeja'].includes(vista) ? 'reportes'
+        : (['maestros','historial'].includes(vista) ? 'configuracion' : vista));
+      APP.pintarNav(); APP.pintarHeader();
+      VIEWS[vista](params||{});
+      el('view').scrollTop=0;
+      DB.guardar();
+    }
+  },
+  init(){
+    DB.init();
+    APP.pintarHeader(); APP.pintarNav(); APP.ir('inventario');
+    addEventListener('popstate',e=>{
+      const est=e.state||{v:'inventario',p:{}};
+      APP._ult=est.v+JSON.stringify(est.p||{});
+      APP.ir(est.v,est.p,true);
+    });
+    /* Al cerrar la pestana se guarda de una vez, sin esperar el retardo */
+    addEventListener('beforeunload',()=>DB.guardar(true));
+    setInterval(()=>{ el('hd-clock').textContent=U.ts().slice(0,16); },20000);
+    el('hd-clock').textContent=U.ts().slice(0,16);
+    el('btn-menu').onclick=()=>{
+      el('nav').classList.toggle('abierto');
+      el('nav-mask').classList.toggle('on');
+    };
+    el('nav-mask').onclick=APP.cerrarMenu;
+    document.addEventListener('click',e=>{
+      if(!(e.target.closest&&e.target.closest('.mas')))
+        document.querySelectorAll('.mas-lista.on').forEach(l=>l.classList.remove('on'));
+    });
+    /* Atajos: Alt+1..9 navegacion directa */
+    document.addEventListener('keydown',e=>{
+      if(e.altKey && e.key>='1' && +e.key<=APP.menu.length){ e.preventDefault();
+        const m=APP.menu[+e.key-1]; if(m) APP.ir(m.k); }
+      if(e.key==='Escape'){ const m=document.querySelector('.mask'); if(m) m.parentElement.innerHTML=''; APP.cerrarMenu(); }
+    });
+  }
+};
+APP.init();
+</script>
+</body>
+</html>
